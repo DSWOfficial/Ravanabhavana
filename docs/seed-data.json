@@ -1,0 +1,55 @@
+{
+  "admins/udarasampath@gmail.com": {
+    "email": "udarasampath@gmail.com",
+    "role": "admin"
+  },
+  "siteSettings/main": {
+    "whatsappNumber": "94777193197",
+    "displayWhatsappNumber": "+94 77 719 3197",
+    "whatsappGroupUrl": "",
+    "youtubeChannelUrl": "",
+    "facebookPageUrl": "",
+    "phoneNumber": "+94 77 719 3197",
+    "heroTitle": "රාවණ භවණ",
+    "heroSubtitle": "හෙළ උරුමයේ අභිමානය",
+    "heroDescription": "රාවණ භවණ යනු සියලු දෙනා දුකින් මුදවා ගැනීමේ අරමුණින් පවත්වාගෙන යන සමාජ මෙහෙවරකි. අප ආවරණය කරන සියලු ක්ෂේත්‍රවල නොමිලේ ලබාදෙන සේවාවන් ඔබගේ ජීවිතයට ප්‍රායෝගික ශක්තියක් වේවි.",
+    "zoomFallbackText": "Zoom link එක ඉක්මනින් පළ කරනු ඇත."
+  },
+  "weeklySchedule/main": {
+    "day": "Saturday",
+    "startTime": "20:00",
+    "endTime": "20:40",
+    "description": "සතිපතා Zoom සැසිය",
+    "isActive": true
+  },
+  "donationSettings/main": {
+    "organizationName": "රාවණ භවණ",
+    "accountHolderName": "S. Udara Sampath Rodrigo",
+    "bankName": "Your bank",
+    "branch": "Your branch",
+    "accountNumber": "0000000000",
+    "purposes": ["සමාජ මෙහෙවර", "Zoom සහාය", "අධ්‍යාපනික වැඩසටහන්"]
+  },
+  "videos/example": {
+    "title": "ආරම්භක මගපෙන්වීම",
+    "subtitle": "රාවණ භවණ වීඩියෝ මාලාව",
+    "description": "මෙහි ඔබගේ පළමු වීඩියෝ විස්තරය එක් කරන්න.",
+    "youtubeUrl": "https://www.youtube.com/watch?v=VIDEO_ID",
+    "videoId": "VIDEO_ID",
+    "thumbnailUrl": "https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg",
+    "videoNumber": 1,
+    "isLatest": true,
+    "isActive": true,
+    "order": 1
+  },
+  "banners/example": {
+    "title": "සතිපතා Zoom සැසිය",
+    "message": "මෙම සෙනසුරාදා රාත්‍රී 8.00ට සම්බන්ධ වන්න.",
+    "type": "notice",
+    "buttonText": "විස්තර බලන්න",
+    "buttonUrl": "#session",
+    "startDate": "2026-05-15",
+    "endDate": "2026-12-31",
+    "isActive": true
+  }
+}
