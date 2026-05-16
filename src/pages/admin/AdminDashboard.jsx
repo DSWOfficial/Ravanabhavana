@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import AdminOverview from '../../components/admin/AdminOverview.jsx';
 import VideoManager from '../../components/admin/VideoManager.jsx';
+import PlaylistManager from '../../components/admin/PlaylistManager.jsx';
 import SessionManager from '../../components/admin/SessionManager.jsx';
 import WeeklyScheduleManager from '../../components/admin/WeeklyScheduleManager.jsx';
 import BannerManager from '../../components/admin/BannerManager.jsx';
@@ -13,6 +14,7 @@ import PublicPreview from '../../components/admin/PublicPreview.jsx';
 
 const pageMap = {
   overview: ['Overview', AdminOverview],
+  playlists: ['Playlists', PlaylistManager],
   videos: ['Videos', VideoManager],
   sessions: ['Zoom Sessions', SessionManager],
   schedule: ['Weekly Schedule', WeeklyScheduleManager],

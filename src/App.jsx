@@ -7,6 +7,7 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminBanners from './pages/admin/AdminBanners.jsx';
 import AdminCmsDashboard from './pages/admin/AdminCmsDashboard.jsx';
 import AdminVideos from './pages/admin/AdminVideos.jsx';
+import AdminPlaylists from './pages/admin/AdminPlaylists.jsx';
 import AdminGuidance from './pages/admin/AdminGuidance.jsx';
 import AdminWeeklySessions from './pages/admin/AdminWeeklySessions.jsx';
 import AdminBlockedUsers from './pages/admin/AdminBlockedUsers.jsx';
@@ -20,6 +21,9 @@ import DynamicPage from './pages/DynamicPage.jsx';
 import HomepageEditor from './pages/admin/HomepageEditor.jsx';
 import PublicHome from './pages/PublicHome.jsx';
 import GuidancePage from './pages/GuidancePage.jsx';
+import VideoLibraryPage from './pages/VideoLibraryPage.jsx';
+import PlaylistDetailPage from './pages/PlaylistDetailPage.jsx';
+import VideoDetailPage from './pages/VideoDetailPage.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import AdminRoute from './routes/AdminRoute.jsx';
 
@@ -31,6 +35,9 @@ export default function App() {
         <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<Login />} />
         <Route path="/guidance" element={<GuidancePage />} />
+        <Route path="/videos" element={<VideoLibraryPage />} />
+        <Route path="/videos/playlist/:slug" element={<PlaylistDetailPage />} />
+        <Route path="/videos/:slug" element={<VideoDetailPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
@@ -41,6 +48,7 @@ export default function App() {
         <Route path="/admin/guidance" element={<AdminRoute><AdminGuidance /></AdminRoute>} />
         <Route path="/admin/weekly-sessions" element={<AdminRoute><AdminWeeklySessions /></AdminRoute>} />
         <Route path="/admin/blocked-users" element={<AdminRoute><AdminBlockedUsers /></AdminRoute>} />
+        <Route path="/admin/playlists" element={<AdminRoute><AdminPlaylists /></AdminRoute>} />
         <Route path="/admin/videos" element={<AdminRoute><AdminVideos /></AdminRoute>} />
         <Route path="/admin/pages" element={<AdminRoute><CmsPagesList /></AdminRoute>} />
         <Route path="/admin/pages/new" element={<AdminRoute><CmsPageNew /></AdminRoute>} />

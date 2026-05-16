@@ -1,12 +1,26 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { Edit3, EyeOff, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { db } from '../../firebase.js';
-import { firebaseData } from '../../lib/firebaseData.js';
+import { normalizePlaylist, normalizeVideo, slugify, tagsFromText, uncategorizedPlaylist, videoLevels } from '../../lib/videoLibrary.js';
 import { extractYouTubeId, getYouTubeThumbnail } from '../../utils/youtube.js';
-import { AdminCard, confirmDelete, emptyToast, fetchTable, StatusBadge, Toast } from './adminHelpers.jsx';
+import { AdminCard, confirmDelete, emptyToast, StatusBadge, Toast } from './adminHelpers.jsx';
 
-const empty = { youtube_url: '', title: '', subtitle: '', description: '', video_number: '', display_order: 1, is_latest: false, is_active: true };
+const empty = {
+  title: '',
+  slug: '',
+  description: '',
+  videoUrl: '',
+  thumbnailUrl: '',
+  playlistId: '',
+  duration: '',
+  tagsText: '',
+  level: 'Beginner',
+  featured: false,
+  isPublished: true,
+  order: 1,
+};
 const emptyNote = { title: '', content: '', isPublished: true };
 
 function normalizeNote(note) {
@@ -18,19 +32,55 @@ function normalizeNote(note) {
   };
 }
 
+function adminError(error, path) {
+  return `${path}: ${error.code || 'error'} - ${error.message}`;
+}
+
 export default function VideoManager() {
+  const { user } = useAuth();
   const [videos, setVideos] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState(emptyToast);
   const [notes, setNotes] = useState([]);
   const [noteForm, setNoteForm] = useState(emptyNote);
   const [editingNoteId, setEditingNoteId] = useState(null);
-  const videoId = extractYouTubeId(form.youtube_url);
-  const thumbnail = getYouTubeThumbnail(videoId);
 
-  const load = async () => setVideos(await fetchTable('videos', 'display_order'));
-  useEffect(() => { load().catch((error) => setToast({ message: error.message, type: 'error' })); }, []);
+  const videoId = extractYouTubeId(form.videoUrl);
+  const thumbnail = form.thumbnailUrl || getYouTubeThumbnail(videoId);
+  const playlistMap = useMemo(() => Object.fromEntries(playlists.map((playlist) => [playlist.id, playlist])), [playlists]);
+
+  const loadPlaylists = async () => {
+    try {
+      const playlistSnap = await getDocs(collection(db, 'playlists'));
+      const items = playlistSnap.docs.map((item) => normalizePlaylist(item.data(), item.id)).sort((a, b) => a.order - b.order);
+      setPlaylists(items);
+      return items;
+    } catch (error) {
+      console.error('[VideoManager] playlist load failed:', error);
+      setPlaylists([]);
+      setToast({ message: adminError(error, 'playlists'), type: 'error' });
+      return [];
+    }
+  };
+
+  const loadVideos = async () => {
+    try {
+      const videoSnap = await getDocs(collection(db, 'videos'));
+      setVideos(videoSnap.docs.map((item) => normalizeVideo(item.data(), item.id)).sort((a, b) => a.order - b.order));
+    } catch (error) {
+      console.error('[VideoManager] video load failed:', error);
+      setVideos([]);
+      setToast({ message: adminError(error, 'videos'), type: 'error' });
+    }
+  };
+
+  const load = async () => {
+    await Promise.all([loadPlaylists(), loadVideos()]);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const loadNotes = async (videoDocId) => {
     if (!videoDocId) return setNotes([]);
@@ -38,26 +88,100 @@ export default function VideoManager() {
     setNotes(snap.docs.map((item) => normalizeNote({ id: item.id, ...item.data() })).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)));
   };
 
-  const reset = () => { setForm(empty); setEditingId(null); setNotes([]); setNoteForm(emptyNote); setEditingNoteId(null); };
+  const reset = () => {
+    setForm(empty);
+    setEditingId(null);
+    setNotes([]);
+    setNoteForm(emptyNote);
+    setEditingNoteId(null);
+  };
+
+  const patch = (field, value) => {
+    setForm((current) => {
+      const next = { ...current, [field]: value };
+      if (field === 'title' && !editingId) next.slug = slugify(value);
+      return next;
+    });
+  };
+
   const save = async (event) => {
     event.preventDefault();
-    if (!videoId) return setToast({ message: 'Invalid YouTube URL', type: 'error' });
-    const payload = { ...form, video_id: videoId, thumbnail_url: thumbnail, display_order: Number(form.display_order || 1), updated_at: new Date().toISOString() };
+    const youtubeId = extractYouTubeId(form.videoUrl);
+    if (!youtubeId) return setToast({ message: 'Invalid YouTube URL', type: 'error' });
+    const playlist = playlists.find((item) => item.id === form.playlistId);
+    const payload = {
+      title: form.title.trim(),
+      slug: form.slug || slugify(form.title),
+      description: form.description,
+      videoUrl: form.videoUrl,
+      youtubeUrl: form.videoUrl,
+      youtubeId,
+      videoId: youtubeId,
+      thumbnailUrl: thumbnail,
+      playlistId: playlist?.id || '',
+      playlistSlug: playlist?.slug || '',
+      playlistTitle: playlist?.title || 'Uncategorized',
+      duration: form.duration,
+      tags: tagsFromText(form.tagsText),
+      level: form.level,
+      featured: Boolean(form.featured),
+      isPublished: Boolean(form.isPublished),
+      isActive: Boolean(form.isPublished),
+      order: Number(form.order || 999),
+      updatedAt: serverTimestamp(),
+      createdBy: user?.email || '',
+    };
     try {
-      if (payload.is_latest) await firebaseData.from('videos').update({ is_latest: false }).neq('id', editingId || '');
-      if (editingId) await firebaseData.from('videos').update(payload).eq('id', editingId).throwOnError();
-      else await firebaseData.from('videos').insert(payload).throwOnError();
+      if (editingId) await updateDoc(doc(db, 'videos', editingId), payload);
+      else await addDoc(collection(db, 'videos'), { ...payload, createdAt: serverTimestamp() });
       setToast({ message: 'Video saved', type: 'success' });
       reset();
       await load();
     } catch (error) {
-      setToast({ message: error.message, type: 'error' });
+      console.error('[VideoManager] save failed:', error);
+      setToast({ message: `Could not save video. ${adminError(error, editingId ? `videos/${editingId}` : 'videos')}`, type: 'error' });
     }
   };
 
-  const edit = (video) => { setEditingId(video.id); setForm(video); setNoteForm(emptyNote); setEditingNoteId(null); loadNotes(video.id).catch((error) => setToast({ message: error.message, type: 'error' })); };
-  const toggle = async (video) => { await firebaseData.from('videos').update({ is_active: !video.is_active, updated_at: new Date().toISOString() }).eq('id', video.id); await load(); };
-  const remove = async (video) => { if (confirmDelete(video.title)) { await firebaseData.from('videos').delete().eq('id', video.id); await load(); } };
+  const edit = (video) => {
+    const normalized = normalizeVideo(video);
+    setEditingId(video.id);
+    setForm({
+      ...empty,
+      ...normalized,
+      videoUrl: normalized.videoUrl,
+      thumbnailUrl: normalized.thumbnailUrl,
+      playlistId: normalized.playlistId || '',
+      tagsText: (normalized.tags || []).join(', '),
+      isPublished: normalized.isPublished,
+      order: normalized.order,
+    });
+    setNoteForm(emptyNote);
+    setEditingNoteId(null);
+    loadNotes(video.id).catch((error) => setToast({ message: adminError(error, 'videoNotes'), type: 'error' }));
+  };
+
+  const toggle = async (video) => {
+    try {
+      await updateDoc(doc(db, 'videos', video.id), { isPublished: !video.isPublished, isActive: !video.isPublished, updatedAt: serverTimestamp() });
+      await load();
+    } catch (error) {
+      console.error('[VideoManager] publish toggle failed:', error);
+      setToast({ message: adminError(error, `videos/${video.id}`), type: 'error' });
+    }
+  };
+
+  const remove = async (video) => {
+    if (!confirmDelete(video.title)) return;
+    try {
+      await deleteDoc(doc(db, 'videos', video.id));
+      await load();
+    } catch (error) {
+      console.error('[VideoManager] delete failed:', error);
+      setToast({ message: adminError(error, `videos/${video.id}`), type: 'error' });
+    }
+  };
+
   const saveNote = async (event) => {
     event.preventDefault();
     if (!editingId) return setToast({ message: 'Select or save a video before adding notes', type: 'error' });
@@ -74,36 +198,54 @@ export default function VideoManager() {
         updatedAt: serverTimestamp(),
       };
       if (editingNoteId) await updateDoc(doc(db, 'videoNotes', editingNoteId), payload);
-      else await addDoc(collection(db, 'videoNotes'), { ...payload, createdAt: serverTimestamp() });
+      else await addDoc(collection(db, 'videoNotes'), { ...payload, createdAt: serverTimestamp(), createdBy: user?.email || '' });
       setToast({ message: 'Video note saved', type: 'success' });
       setNoteForm(emptyNote);
       setEditingNoteId(null);
       await loadNotes(editingId);
     } catch (error) {
-      setToast({ message: error.message, type: 'error' });
+      console.error('[VideoManager] note save failed:', error);
+      setToast({ message: adminError(error, editingNoteId ? `videoNotes/${editingNoteId}` : 'videoNotes'), type: 'error' });
     }
   };
+
   const editNote = (note) => { setEditingNoteId(note.id); setNoteForm(normalizeNote(note)); };
   const removeNote = async (note) => {
     if (!confirmDelete(note.title || 'this note')) return;
-    await deleteDoc(doc(db, 'videoNotes', note.id));
-    await loadNotes(editingId);
+    try {
+      await deleteDoc(doc(db, 'videoNotes', note.id));
+      await loadNotes(editingId);
+    } catch (error) {
+      console.error('[VideoManager] note delete failed:', error);
+      setToast({ message: adminError(error, `videoNotes/${note.id}`), type: 'error' });
+    }
   };
 
   return (
     <AdminCard title="Video Manager" actions={<button className="btn btn-outline" onClick={reset}><Plus size={18} />New</button>}>
       <Toast toast={toast} />
       <form onSubmit={save} className="mt-4 grid gap-3 lg:grid-cols-2">
-        <input className="input" required placeholder="YouTube URL" value={form.youtube_url || ''} onChange={(e) => setForm({ ...form, youtube_url: e.target.value })} />
-        <input className="input" required placeholder="Sinhala title" value={form.title || ''} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <input className="input" placeholder="Subtitle" value={form.subtitle || ''} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} />
-        <input className="input" required placeholder="Video number, example No01" value={form.video_number || ''} onChange={(e) => setForm({ ...form, video_number: e.target.value })} />
-        <input className="input" type="number" min="1" placeholder="Display order" value={form.display_order || ''} onChange={(e) => setForm({ ...form, display_order: e.target.value })} />
-        <div className="flex gap-5 rounded-lg bg-[#fffaf0] p-3 font-bold"><label><input type="checkbox" checked={Boolean(form.is_latest)} onChange={(e) => setForm({ ...form, is_latest: e.target.checked })} /> Latest</label><label><input type="checkbox" checked={Boolean(form.is_active)} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /> Active</label></div>
-        <textarea className="input min-h-28 lg:col-span-2" placeholder="Description" value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        {thumbnail && <img className="aspect-video w-full max-w-sm rounded-lg object-cover" src={thumbnail} alt="YouTube thumbnail preview" />}
+        <input className="input" required placeholder="Title" value={form.title || ''} onChange={(event) => patch('title', event.target.value)} />
+        <input className="input" placeholder="Slug" value={form.slug || ''} onChange={(event) => patch('slug', slugify(event.target.value))} />
+        <input className="input" required placeholder="YouTube / video URL" value={form.videoUrl || ''} onChange={(event) => patch('videoUrl', event.target.value)} />
+        <input className="input" placeholder="Thumbnail URL from Media Library" value={form.thumbnailUrl || ''} onChange={(event) => patch('thumbnailUrl', event.target.value)} />
+        <select className="input" value={form.playlistId || ''} onChange={(event) => patch('playlistId', event.target.value)}>
+          <option value="">Uncategorized</option>
+          {playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.title}</option>)}
+        </select>
+        <select className="input" value={form.level} onChange={(event) => patch('level', event.target.value)}>{videoLevels.map((level) => <option key={level}>{level}</option>)}</select>
+        <input className="input" placeholder="Duration, example 12:30" value={form.duration || ''} onChange={(event) => patch('duration', event.target.value)} />
+        <input className="input" type="number" min="1" placeholder="Order" value={form.order || ''} onChange={(event) => patch('order', event.target.value)} />
+        <input className="input lg:col-span-2" placeholder="Tags, comma separated" value={form.tagsText || ''} onChange={(event) => patch('tagsText', event.target.value)} />
+        <textarea className="input min-h-28 lg:col-span-2" placeholder="Description" value={form.description || ''} onChange={(event) => patch('description', event.target.value)} />
+        <div className="flex flex-wrap gap-5 rounded-lg bg-[#fffaf0] p-3 font-bold">
+          <label><input type="checkbox" checked={Boolean(form.featured)} onChange={(event) => patch('featured', event.target.checked)} /> Featured</label>
+          <label><input type="checkbox" checked={Boolean(form.isPublished)} onChange={(event) => patch('isPublished', event.target.checked)} /> Published</label>
+        </div>
+        {thumbnail && <img className="aspect-video w-full max-w-sm rounded-lg object-cover" src={thumbnail} alt="Video thumbnail preview" />}
         <button className="btn btn-primary lg:col-span-2">{editingId ? 'Update video' : 'Add video'}</button>
       </form>
+
       {editingId && (
         <section className="mt-6 rounded-lg border border-[color-mix(in_srgb,var(--theme-accent)_25%,transparent)] p-4">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
@@ -111,9 +253,9 @@ export default function VideoManager() {
             <button className="btn btn-outline" type="button" onClick={() => { setNoteForm(emptyNote); setEditingNoteId(null); }}><Plus size={16} />New note</button>
           </div>
           <form onSubmit={saveNote} className="mt-4 grid gap-3 md:grid-cols-2">
-            <input className="input" required placeholder="Note title" value={noteForm.title} onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })} />
-            <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(noteForm.isPublished)} onChange={(e) => setNoteForm({ ...noteForm, isPublished: e.target.checked })} /> Published</label>
-            <textarea className="input min-h-24 md:col-span-2" required placeholder="Note text" value={noteForm.content} onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })} />
+            <input className="input" required placeholder="Note title" value={noteForm.title} onChange={(event) => setNoteForm({ ...noteForm, title: event.target.value })} />
+            <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(noteForm.isPublished)} onChange={(event) => setNoteForm({ ...noteForm, isPublished: event.target.checked })} /> Published</label>
+            <textarea className="input min-h-24 md:col-span-2" required placeholder="Note text" value={noteForm.content} onChange={(event) => setNoteForm({ ...noteForm, content: event.target.value })} />
             <button className="btn btn-primary md:col-span-2">{editingNoteId ? 'Update note' : 'Add note'}</button>
           </form>
           <div className="mt-4 grid gap-3">
@@ -121,7 +263,7 @@ export default function VideoManager() {
               <article className="surface rounded-lg p-4" key={note.id}>
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                   <div><b className="text-[var(--theme-primary)]">{note.title}</b><p className="mt-2 whitespace-pre-wrap text-sm text-[var(--theme-muted)]">{note.content}</p>{note.isPublished && <span className="mt-2 inline-block rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-800">Published</span>}</div>
-                  <div className="flex gap-2"><button className="btn btn-outline" onClick={() => editNote(note)}><Edit3 size={16} /></button><button className="btn btn-primary" onClick={() => removeNote(note)}><Trash2 size={16} /></button></div>
+                  <div className="flex gap-2"><button className="btn btn-outline" type="button" onClick={() => editNote(note)}><Edit3 size={16} /></button><button className="btn btn-primary" type="button" onClick={() => removeNote(note)}><Trash2 size={16} /></button></div>
                 </div>
               </article>
             ))}
@@ -129,10 +271,25 @@ export default function VideoManager() {
           </div>
         </section>
       )}
+
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[900px] text-left">
-          <thead><tr className="border-b text-sm text-[#6f4a31]"><th>Thumbnail</th><th>No</th><th>Title</th><th>Latest</th><th>Status</th><th>Order</th><th>Created</th><th>Actions</th></tr></thead>
-          <tbody>{videos.map((video) => <tr className="border-b border-[#b88934]/15" key={video.id}><td className="py-3"><img className="h-14 w-24 rounded object-cover" src={video.thumbnail_url} alt="" /></td><td>{video.video_number}</td><td className="font-bold">{video.title}</td><td>{video.is_latest && <span className="rounded-full bg-[#b88934] px-3 py-1 text-xs font-black">Latest</span>}</td><td><StatusBadge active={video.is_active} /></td><td>{video.display_order}</td><td>{video.created_at?.slice(0, 10)}</td><td><div className="flex gap-2"><button className="btn btn-outline" onClick={() => edit(video)}><Edit3 size={16} /></button><button className="btn btn-outline" onClick={() => toggle(video)}><EyeOff size={16} /></button><button className="btn btn-primary" onClick={() => remove(video)}><Trash2 size={16} /></button></div></td></tr>)}</tbody>
+          <thead><tr className="border-b text-sm text-[#6f4a31]"><th>Thumbnail</th><th>Title</th><th>Playlist</th><th>Level</th><th>Featured</th><th>Status</th><th>Order</th><th>Actions</th></tr></thead>
+          <tbody>{videos.map((video) => {
+            const playlist = playlistMap[video.playlistId] || (video.playlistTitle ? { ...uncategorizedPlaylist, title: video.playlistTitle } : uncategorizedPlaylist);
+            return (
+              <tr className="border-b border-[#b88934]/15" key={video.id}>
+                <td className="py-3"><img className="h-14 w-24 rounded object-cover" src={video.thumbnailUrl} alt="" /></td>
+                <td className="font-bold">{video.title}</td>
+                <td>{playlist.title}</td>
+                <td>{video.level}</td>
+                <td>{video.featured && <span className="rounded-full bg-[#b88934] px-3 py-1 text-xs font-black">Featured</span>}</td>
+                <td><StatusBadge active={video.isPublished} label={video.isPublished ? 'Published' : 'Draft'} /></td>
+                <td>{video.order}</td>
+                <td><div className="flex gap-2"><button className="btn btn-outline" type="button" onClick={() => edit(video)}><Edit3 size={16} /></button><button className="btn btn-outline" type="button" onClick={() => toggle(video)}><EyeOff size={16} /></button><button className="btn btn-primary" type="button" onClick={() => remove(video)}><Trash2 size={16} /></button></div></td>
+              </tr>
+            );
+          })}</tbody>
         </table>
         {!videos.length && <p className="py-6 text-[#6f4a31]">No videos yet.</p>}
       </div>

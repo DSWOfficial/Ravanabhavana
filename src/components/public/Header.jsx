@@ -8,7 +8,7 @@ const fallbackLinks = [
   ['Home', '/#home'],
   ['About', '/#about'],
   ['Services', '/#services'],
-  ['Videos', '/#videos'],
+  ['Videos', '/videos'],
   ['Weekly Session', '/#session'],
   ['Support', '/#support'],
   ['Contact', '/#contact'],
@@ -51,7 +51,7 @@ export default function Header() {
           ) : (
             <>
               <Link className="btn btn-outline header-action-btn" to="/login">Login</Link>
-              <a className="btn btn-primary header-action-btn" href="/#videos">Continue as Guest</a>
+              <Link className="btn btn-primary header-action-btn" to="/videos">Continue as Guest</Link>
             </>
           )}
         </div>
