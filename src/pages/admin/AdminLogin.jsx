@@ -2,8 +2,8 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ADMIN_EMAIL } from '../../context/AuthContext.jsx';
 import { auth } from '../../firebase.js';
+import { ADMIN_EMAIL, isAdminUser } from '../../lib/adminAuth.js';
 
 export default function AdminLogin() {
   const [form, setForm] = useState({ email: 'udarasampath@gmail.com', password: '' });
@@ -14,10 +14,15 @@ export default function AdminLogin() {
     event.preventDefault();
     setStatus({ loading: true, error: '' });
     try {
+      if (form.email.trim().toLowerCase() !== ADMIN_EMAIL || form.password !== 'Mindul123') {
+        await signOut(auth).catch(() => {});
+        setStatus({ loading: false, error: 'Access denied. Use the approved admin email and password.' });
+        return;
+      }
       const credential = await signInWithEmailAndPassword(auth, form.email, form.password);
       const email = credential.user.email;
       console.log('[AdminLogin] logged-in email:', email);
-      const isAdmin = email?.toLowerCase() === ADMIN_EMAIL;
+      const isAdmin = isAdminUser(credential.user);
       console.log('[AdminLogin] redirect decision:', isAdmin ? 'redirect:/admin' : 'access-denied');
       if (!isAdmin) {
         await signOut(auth);

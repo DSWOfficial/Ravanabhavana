@@ -2,12 +2,12 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
+import { ADMIN_EMAIL, isAdminUser } from '../lib/adminAuth.js';
 
 const AuthContext = createContext(null);
-export const ADMIN_EMAIL = 'udarasampath@gmail.com';
 
 async function checkAdmin(email) {
-  return email?.toLowerCase() === ADMIN_EMAIL;
+  return isAdminUser({ email });
 }
 
 async function syncUserProfile(firebaseUser) {

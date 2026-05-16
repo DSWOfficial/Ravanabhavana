@@ -1,5 +1,5 @@
-import { Banknote, BarChart3, Bell, CalendarClock, Eye, FileText, Gift, Home, Images, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, Users, Video, X } from 'lucide-react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Banknote, BarChart3, Bell, CalendarClock, Eye, FileText, Gift, HeartHandshake, Home, Images, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, ShieldAlert, Users, Video, X } from 'lucide-react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase.js';
 
@@ -18,14 +18,20 @@ const managerItems = [
 
 const cmsItems = [
   ['/admin/cms', 'CMS Dashboard', BarChart3],
+  ['/admin/homepage', 'Homepage Editor', Home],
+  ['/admin/banners', 'Banners', Bell],
+  ['/admin/guidance', 'Guidance', HeartHandshake],
+  ['/admin/weekly-sessions', 'Weekly Sessions', CalendarClock],
+  ['/admin/blocked-users', 'Blocked Users', ShieldAlert],
+  ['/admin/videos', 'Video Editor', PlaySquare],
   ['/admin/pages', 'Pages', FileText],
   ['/admin/pages/new', 'Create Page', FileText],
   ['/admin/media', 'Media', Images],
   ['/admin/navigation', 'Navigation', LinkIcon],
-  ['/admin/pages/home/edit', 'SEO Settings', Search],
+  ['/admin/seo', 'SEO Settings', Search],
 ];
 
-export default function AdminSidebar({ open, setOpen, activePage, setActivePage }) {
+export default function AdminSidebar({ open, setOpen, collapsed = false, activePage, setActivePage }) {
   const navigate = useNavigate();
   const logout = async () => {
     await signOut(auth);
@@ -41,6 +47,8 @@ export default function AdminSidebar({ open, setOpen, activePage, setActivePage 
         <button className="lg:hidden" onClick={() => setOpen(false)}><X /></button>
       </div>
       <nav className="mt-8 grid gap-2">
+        <Link className="flex items-center gap-3 rounded-lg bg-white/10 px-4 py-3 font-bold hover:bg-white/15" to="/"><Home size={18} />Back to Website</Link>
+        <Link className="flex items-center gap-3 rounded-lg bg-white/10 px-4 py-3 font-bold hover:bg-white/15" to="/admin"><BarChart3 size={18} />Back to Admin Home</Link>
         {setActivePage && (
           <>
             <p className="px-4 pt-2 text-xs font-black uppercase tracking-wide text-[#d6ad61]">Manage Website</p>
@@ -62,7 +70,7 @@ export default function AdminSidebar({ open, setOpen, activePage, setActivePage 
             <Icon size={18} />{label}
           </NavLink>
         ))}
-        <a className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" href="/" target="_blank" rel="noreferrer"><Home size={18} />Public Preview</a>
+        <Link className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" to="/"><Home size={18} />Public Preview</Link>
       </nav>
       <button className="mt-auto flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" onClick={logout}><LogOut size={18} />Logout</button>
     </div>
@@ -70,7 +78,7 @@ export default function AdminSidebar({ open, setOpen, activePage, setActivePage 
   return (
     <>
       <button className="fixed left-4 top-4 z-40 rounded-lg bg-[#24150f] p-3 text-white lg:hidden" onClick={() => setOpen(true)}><Menu /></button>
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-72 lg:block">{content}</aside>
+      <aside className={`fixed inset-y-0 left-0 z-50 hidden w-72 transition-transform lg:block ${collapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}>{content}</aside>
       {open && <aside className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} /><div className="relative h-full w-72">{content}</div></aside>}
     </>
   );

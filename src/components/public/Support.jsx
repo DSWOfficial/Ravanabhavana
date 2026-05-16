@@ -12,10 +12,18 @@ export default function Support() {
   const { user } = useAuth();
   const [settings, setSettings] = useState(defaults);
   const [form, setForm] = useState({ name: '', country: 'Sri Lanka', area: '', amount: '', phone: '', purpose: defaults.purposes[0], note: '' });
-  useEffect(() => onSnapshot(doc(db, 'donationSettings', 'main'), (snap) => snap.exists() && setSettings({ ...defaults, ...snap.data() })), []);
+  useEffect(() => onSnapshot(doc(db, 'donationSettings', 'main'), (snap) => snap.exists() && setSettings({ ...defaults, ...snap.data() }), (error) => {
+    console.error('Failed to load donation settings from donationSettings/main', error);
+  }), []);
   const submit = async (event) => {
     event.preventDefault();
-    if (user) await addDoc(collection(db, 'donationSubmissions'), { ...form, userId: user.uid, isGuest: false, createdAt: serverTimestamp() });
+    if (user) {
+      try {
+        await addDoc(collection(db, 'donationSubmissions'), { ...form, userId: user.uid, isGuest: false, createdAt: serverTimestamp() });
+      } catch (error) {
+        console.error('Failed to save donation submission', error);
+      }
+    }
     openWhatsApp('94777193197', createDonationWhatsAppMessage(form));
   };
   const bank = [['Organization name', settings.organizationName], ['Account holder name', settings.accountHolderName], ['Bank name', settings.bankName], ['Branch', settings.branch], ['Account number', settings.accountNumber]];

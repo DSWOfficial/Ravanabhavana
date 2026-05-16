@@ -5,100 +5,176 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isOwner(userId) {
       return signedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
-      return signedIn()
-        && request.auth.token.email == 'udarasampath@gmail.com';
+      return request.auth != null
+        && request.auth.token.email == "udarasampath@gmail.com"
+        && exists(/databases/$(database)/documents/admins/udarasampath@gmail.com)
+        && get(/databases/$(database)/documents/admins/udarasampath@gmail.com).data.role == "admin"
+        && get(/databases/$(database)/documents/admins/udarasampath@gmail.com).data.email == "udarasampath@gmail.com";
     }
 
-    function publicContent() {
-      return true;
+    function isPublished() {
+      return resource.data.published == true
+        || resource.data.status == "published"
+        || resource.data.publicReadable == true
+        || resource.data.isActive == true
+        || resource.data.visible == true;
     }
 
-    match /admins/{email} {
-      allow read: if isAdmin();
-      allow write: if false;
-    }
-
-    match /users/{userId} {
-      allow create: if isOwner(userId) && request.resource.data.role == 'user';
-      allow update: if isOwner(userId) && request.resource.data.role == 'user';
-      allow read: if isOwner(userId) || isAdmin();
-      allow delete: if false;
-    }
-
-    match /videos/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /sessions/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /weeklySchedule/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /banners/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /siteSettings/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /donationSettings/{id} {
-      allow read: if publicContent();
-      allow write: if isAdmin();
-    }
-
-    match /userVideoProgress/{id} {
-      allow create, update: if isOwner(request.resource.data.userId)
-        && !request.resource.data.keys().hasAny(['note']);
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow delete: if isOwner(resource.data.userId) || isAdmin();
-    }
-
-    match /userPrivateNotes/{id} {
-      allow create, update: if isOwner(request.resource.data.userId);
-      allow read, delete: if isOwner(resource.data.userId);
-    }
-
-    match /userSessionJoins/{id} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow update: if false;
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow delete: if isOwner(resource.data.userId) || isAdmin();
-    }
-
-    match /donationSubmissions/{id} {
-      allow create: if (signedIn() && request.resource.data.userId == request.auth.uid)
-        || request.resource.data.isGuest == true;
-      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
-      allow update, delete: if isAdmin();
+    function isBlockedAuthUser() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/blockedUsers/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/blockedUsers/$(request.auth.token.email)).data.isActive == true;
     }
 
     match /pages/{id} {
-      allow read: if resource.data.published == true || isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /navigation/{id} {
-      allow read: if publicContent();
+      allow read: if isAdmin() || isPublished();
       allow write: if isAdmin();
     }
 
     match /media/{id} {
-      allow read: if publicContent();
+      allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /navigation/{id} {
+      allow read: if isAdmin() || resource.data.visible == true;
+      allow write: if isAdmin();
+    }
+
+    match /seo/{id} {
+      allow read: if isAdmin() || resource.data.publicReadable == true;
+      allow write: if isAdmin();
+    }
+
+    match /videos/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /videoNotes/{id} {
+      allow read: if isAdmin() || resource.data.isPublished == true || resource.data.published == true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /settings/{id} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /siteContent/{id} {
+      allow read: if isAdmin() || isPublished();
+      allow write: if isAdmin();
+    }
+
+    match /homeSections/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /services/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /siteSettings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /donationSettings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /banners/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /sessions/{id} {
+      allow read: if isAdmin() || resource.data.isActive == true;
+      allow write: if isAdmin();
+    }
+
+    match /weeklySchedule/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /anonymousGuidance/{docId} {
+      allow create: if true;
+      allow read: if resource.data.isPublished == true || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /weeklySessions/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /blockedUsers/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email == "udarasampath@gmail.com";
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId) && !isBlockedAuthUser() && request.resource.data.role == 'user';
+      allow update: if isOwner(userId) && !isBlockedAuthUser() && request.resource.data.role == 'user';
+      allow read: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /donationSubmissions/{id} {
+      allow create: if !isBlockedAuthUser() && ((signedIn() && request.resource.data.userId == request.auth.uid)
+        || request.resource.data.isGuest == true);
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /userVideoProgress/{id} {
+      allow read: if isSignedIn()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn()
+        && !isBlockedAuthUser()
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && !isBlockedAuthUser()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /userPrivateNotes/{id} {
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && !isBlockedAuthUser()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && !isBlockedAuthUser()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /userSessionJoins/{id} {
+      allow create: if !isBlockedAuthUser() && isOwner(request.resource.data.userId);
+      allow update: if false;
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
   }
 }

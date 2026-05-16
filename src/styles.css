@@ -13,6 +13,9 @@
   --theme-accent-2: #c85a3d;
   --theme-hero: #132321;
   --theme-hero-text: #fff9ed;
+  --scrollbar-track: #f7f2e8;
+  --scrollbar-thumb: #d9a441;
+  --scrollbar-thumb-hover: #0b2a24;
   --cream: var(--theme-page);
   --paper: var(--theme-surface);
   --brown: var(--theme-primary);
@@ -22,6 +25,34 @@
 }
 
 * { box-sizing: border-box; }
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--scrollbar-thumb), color-mix(in srgb, var(--scrollbar-thumb) 58%, #1f2f2c));
+  border-radius: 999px;
+  border: 3px solid var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--scrollbar-thumb-hover), var(--scrollbar-thumb));
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+}
 
 body {
   margin: 0;

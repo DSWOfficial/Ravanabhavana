@@ -31,9 +31,12 @@ export const sectionTypes = [
 export const emptyPage = {
   title: '',
   slug: '',
+  content: '',
   seoTitle: '',
   seoDescription: '',
+  openGraphImageUrl: '',
   ogImage: '',
+  status: 'draft',
   published: false,
   sections: [],
 };
@@ -65,10 +68,15 @@ export function createSection(type = 'text') {
 }
 
 export function normalizePage(data = {}, id = '') {
+  const status = data.status || (data.published ? 'published' : 'draft');
   return {
     id,
     ...emptyPage,
     ...data,
+    status,
+    published: status === 'published' || data.published === true,
+    openGraphImageUrl: data.openGraphImageUrl || data.ogImage || '',
+    ogImage: data.ogImage || data.openGraphImageUrl || '',
     sections: Array.isArray(data.sections) ? data.sections : [],
   };
 }
@@ -94,10 +102,15 @@ export async function getPublishedPageBySlug(slug) {
 }
 
 export async function createPage(payload) {
+  const status = payload.status || (payload.published ? 'published' : 'draft');
   const docRef = await addDoc(collection(db, 'pages'), {
     ...emptyPage,
     ...payload,
     slug: slugify(payload.slug || payload.title),
+    status,
+    published: status === 'published',
+    openGraphImageUrl: payload.openGraphImageUrl || payload.ogImage || '',
+    ogImage: payload.ogImage || payload.openGraphImageUrl || '',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -107,6 +120,11 @@ export async function createPage(payload) {
 export async function savePage(id, payload) {
   const clean = { ...payload };
   if (payload.slug || payload.title) clean.slug = slugify(payload.slug || payload.title);
+  if (payload.status) clean.published = payload.status === 'published';
+  if (payload.openGraphImageUrl || payload.ogImage) {
+    clean.openGraphImageUrl = payload.openGraphImageUrl || payload.ogImage || '';
+    clean.ogImage = payload.ogImage || payload.openGraphImageUrl || '';
+  }
   await updateDoc(doc(db, 'pages', id), {
     ...clean,
     updatedAt: serverTimestamp(),
@@ -117,8 +135,9 @@ export async function deletePage(id) {
   await deleteDoc(doc(db, 'pages', id));
 }
 
-export async function listNavigation() {
-  const snap = await getDocs(query(collection(db, 'navigation'), orderBy('order', 'asc')));
+export async function listNavigation({ includeHidden = false } = {}) {
+  const constraints = includeHidden ? [orderBy('order', 'asc')] : [where('visible', '==', true), orderBy('order', 'asc')];
+  const snap = await getDocs(query(collection(db, 'navigation'), ...constraints));
   return snap.docs.map((item) => ({ id: item.id, ...item.data() }));
 }
 

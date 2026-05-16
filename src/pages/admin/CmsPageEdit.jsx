@@ -2,9 +2,9 @@ import { Copy, Eye, GripVertical, Plus, Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
-import { AdminCard, Toast, emptyToast } from '../../components/admin/adminHelpers.jsx';
+import { AdminCard, BackToDashboard, PermissionError, Toast, emptyToast } from '../../components/admin/adminHelpers.jsx';
 import PageRenderer from '../../components/public/PageRenderer.jsx';
-import { createPage, createSection, emptyPage, getPage, getPageBySlug, savePage, sectionTypes, slugify } from '../../lib/cms.js';
+import { createSection, getPage, getPageBySlug, savePage, sectionTypes, slugify } from '../../lib/cms.js';
 
 function TextInput({ label, value, onChange, textarea = false }) {
   const Field = textarea ? 'textarea' : 'input';
@@ -47,6 +47,7 @@ export default function CmsPageEdit() {
   const [page, setPage] = useState(null);
   const [preview, setPreview] = useState(false);
   const [toast, setToast] = useState(emptyToast);
+  const [loadError, setLoadError] = useState(null);
   const [newType, setNewType] = useState('text');
 
   useEffect(() => {
@@ -54,14 +55,10 @@ export default function CmsPageEdit() {
     async function load() {
       let found = await getPage(id);
       if (!found) found = await getPageBySlug(id);
-      if (!found && id === 'home') {
-        const createdId = await createPage({ ...emptyPage, title: 'Home', slug: 'home', published: true, sections: [createSection('hero')] });
-        navigate(`/admin/pages/${createdId}/edit`, { replace: true });
-        return;
-      }
+      if (id === 'home') navigate('/admin/homepage', { replace: true });
       if (mounted) setPage(found);
     }
-    load().catch((error) => setToast({ type: 'error', message: error.message }));
+    load().catch((error) => { setLoadError(error); setToast({ type: 'error', message: error.message }); });
     return () => { mounted = false; };
   }, [id, navigate]);
 
@@ -85,21 +82,22 @@ export default function CmsPageEdit() {
     }
   };
 
-  if (!page) return <AdminLayout title="Edit Page"><AdminCard title="Loading"><Toast toast={toast} /><p>Loading page...</p></AdminCard></AdminLayout>;
+  if (!page) return <AdminLayout title="Edit Page"><AdminCard title="Loading" actions={<BackToDashboard />}><Toast toast={toast} /><PermissionError error={loadError} /><p>Loading page...</p></AdminCard></AdminLayout>;
 
   return (
     <AdminLayout title={`Edit: ${page.title || page.slug}`}>
       <div className="grid gap-6">
-        <AdminCard title="Page Settings" actions={<div className="flex flex-wrap gap-2"><button className="btn btn-outline" onClick={() => setPreview(!preview)}><Eye size={18} />{preview ? 'Edit mode' : 'Preview'}</button><button className="btn btn-primary" onClick={save}><Save size={18} />Save</button></div>}>
+        <AdminCard title="Page Settings" actions={<div className="flex flex-wrap gap-2"><BackToDashboard /><button className="btn btn-outline" onClick={() => setPreview(!preview)}><Eye size={18} />{preview ? 'Edit mode' : 'Preview'}</button><button className="btn btn-primary" onClick={save}><Save size={18} />Save</button></div>}>
           <Toast toast={toast} />
           {preview ? <div className="overflow-hidden rounded-lg border"><PageRenderer page={page} /></div> : (
             <div className="grid gap-3 md:grid-cols-2">
               <TextInput label="Page title" value={page.title} onChange={(v) => setPage({ ...page, title: v })} />
               <TextInput label="Slug" value={page.slug} onChange={(v) => setPage({ ...page, slug: slugify(v) })} />
               <TextInput label="SEO title" value={page.seoTitle} onChange={(v) => setPage({ ...page, seoTitle: v })} />
-              <TextInput label="Open Graph image URL" value={page.ogImage} onChange={(v) => setPage({ ...page, ogImage: v })} />
+              <TextInput label="Open Graph image URL" value={page.openGraphImageUrl || page.ogImage} onChange={(v) => setPage({ ...page, openGraphImageUrl: v, ogImage: v })} />
               <TextInput label="SEO description" textarea value={page.seoDescription} onChange={(v) => setPage({ ...page, seoDescription: v })} />
-              <label className="rounded-lg bg-[var(--theme-surface)] p-3 font-bold"><input type="checkbox" checked={page.published} onChange={(e) => setPage({ ...page, published: e.target.checked })} /> Published</label>
+              <label className="grid gap-1 text-sm font-bold text-[var(--theme-muted)]">Status<select className="input" value={page.status || (page.published ? 'published' : 'draft')} onChange={(e) => setPage({ ...page, status: e.target.value, published: e.target.value === 'published' })}><option value="draft">Draft</option><option value="published">Published</option></select></label>
+              <TextInput label="Full page HTML content" textarea value={page.content} onChange={(v) => setPage({ ...page, content: v })} />
             </div>
           )}
         </AdminCard>

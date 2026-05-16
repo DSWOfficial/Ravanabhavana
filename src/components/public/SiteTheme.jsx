@@ -29,6 +29,8 @@ export default function SiteTheme() {
   useEffect(() => {
     return onSnapshot(doc(db, 'siteSettings', 'main'), (snap) => {
       if (snap.exists()) applyTheme(snap.data());
+    }, (error) => {
+      console.error('Failed to load site theme from siteSettings/main', error);
     });
   }, []);
 

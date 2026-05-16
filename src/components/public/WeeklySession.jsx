@@ -2,6 +2,7 @@ import { collection, doc, onSnapshot, query, serverTimestamp, setDoc, where } fr
 import { CalendarClock, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useBlockStatus } from '../../context/BlockContext.jsx';
 import { db } from '../../firebase.js';
 import { formatSinhalaDate, getCountdownParts, getNextWeeklySession, isSessionExpired } from '../../utils/dateTime.js';
 
@@ -43,6 +44,7 @@ function LiveCountdown({ targetDate }) {
 
 export default function WeeklySession() {
   const { user } = useAuth();
+  const { blocked } = useBlockStatus();
   const [sessions, setSessions] = useState([]);
   const [schedule, setSchedule] = useState({
     day: 'Saturday',
@@ -54,10 +56,15 @@ export default function WeeklySession() {
 
   useEffect(() => onSnapshot(query(collection(db, 'sessions'), where('isActive', '==', true)), (snap) => {
     setSessions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }, (error) => {
+    console.error('Failed to load weekly sessions from sessions', error);
+    setSessions([]);
   }), []);
 
   useEffect(() => onSnapshot(doc(db, 'weeklySchedule', 'main'), (snap) => {
     if (snap.exists()) setSchedule(snap.data());
+  }, (error) => {
+    console.error('Failed to load weekly schedule from weeklySchedule/main', error);
   }), []);
 
   const active = useMemo(() => sessions.find((s) => !isSessionExpired(s.expiresAt)), [sessions]);
@@ -68,14 +75,19 @@ export default function WeeklySession() {
   ), [active, schedule]);
 
   const join = async () => {
+    if (blocked) return;
     if (user && active) {
-      await setDoc(doc(db, 'userSessionJoins', `${user.uid}_${active.id}`), {
-        userId: user.uid,
-        sessionId: active.id,
-        joinedAt: serverTimestamp(),
-        sessionTitle: active.title,
-        sessionDate: active.sessionDate,
-      }, { merge: true });
+      try {
+        await setDoc(doc(db, 'userSessionJoins', `${user.uid}_${active.id}`), {
+          userId: user.uid,
+          sessionId: active.id,
+          joinedAt: serverTimestamp(),
+          sessionTitle: active.title,
+          sessionDate: active.sessionDate,
+        }, { merge: true });
+      } catch (error) {
+        console.error('Failed to save weekly session join', error);
+      }
     }
     if (active?.zoomUrl) window.open(active.zoomUrl, '_blank', 'noopener,noreferrer');
   };

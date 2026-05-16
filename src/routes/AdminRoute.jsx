@@ -1,6 +1,10 @@
+import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { ADMIN_EMAIL, useAuth } from '../context/AuthContext.jsx';
+import AdminErrorBoundary from '../components/admin/AdminErrorBoundary.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { auth } from '../firebase.js';
+import { isAdminUser } from '../lib/adminAuth.js';
 
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth();
@@ -11,20 +15,19 @@ export default function AdminRoute({ children }) {
     async function check() {
       if (loading) return;
       if (!user?.email) {
-        console.log('[AdminRoute] logged-in email:', null);
-        console.log('[AdminRoute] redirect decision:', 'redirect:/admin/login');
-        setAdminState({ loading: false, isAdmin: false, error: '' });
+        if (mounted) setAdminState({ loading: false, isAdmin: false, error: '' });
         return;
       }
-      console.log('[AdminRoute] logged-in email:', user.email);
       try {
-        const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL;
-        console.log('[AdminRoute] redirect decision:', isAdmin ? 'render:/admin' : 'access-denied');
-        if (mounted) setAdminState({ loading: false, isAdmin, error: '' });
+        const isAdmin = isAdminUser(user);
+        if (!isAdmin) {
+          await signOut(auth);
+          if (mounted) setAdminState({ loading: false, isAdmin: false, error: '' });
+          return;
+        }
+        if (mounted) setAdminState({ loading: false, isAdmin: true, error: '' });
       } catch (error) {
-        console.error('[AdminRoute] Firestore admin check failed:', error);
-        console.log('[AdminRoute] admin doc exists:', false);
-        console.log('[AdminRoute] redirect decision:', 'error');
+        console.error('[AdminRoute] admin check failed:', error);
         if (mounted) setAdminState({ loading: false, isAdmin: false, error: error.message });
       }
     }
@@ -32,8 +35,7 @@ export default function AdminRoute({ children }) {
     return () => { mounted = false; };
   }, [user, loading]);
 
-  if (loading || adminState.loading) return <div className="section container-shell">Loading admin...</div>;
-  if (!user) return <Navigate to="/admin/login" replace />;
+  if (loading || adminState.loading) return <div className="section container-shell">Checking admin access...</div>;
   if (adminState.error) {
     return (
       <div className="section container-shell">
@@ -43,14 +45,6 @@ export default function AdminRoute({ children }) {
       </div>
     );
   }
-  if (!adminState.isAdmin) {
-    return (
-      <div className="section container-shell">
-        <h1 className="text-3xl font-bold">Access denied</h1>
-        <p className="mt-3">මෙම පිටුව පරිපාලකයින් සඳහා පමණි.</p>
-        <Link className="btn btn-primary mt-5" to="/admin/login">Admin login</Link>
-      </div>
-    );
-  }
-  return children;
+  if (!user || !adminState.isAdmin) return <Navigate to="/admin/login" replace />;
+  return <AdminErrorBoundary>{children}</AdminErrorBoundary>;
 }

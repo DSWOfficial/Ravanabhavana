@@ -83,5 +83,8 @@ function renderSection(section, index) {
 
 export default function PageRenderer({ page }) {
   if (!page) return null;
+  if (page.content && !(page.sections || []).length) {
+    return <div className="cms-html-section" dangerouslySetInnerHTML={{ __html: page.content }} />;
+  }
   return <>{(page.sections || []).map(renderSection)}</>;
 }

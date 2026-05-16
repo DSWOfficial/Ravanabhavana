@@ -3,16 +3,22 @@ import { ArrowLeft, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase.js';
+import { useBlockStatus } from '../context/BlockContext.jsx';
 
 export default function Login() {
   const [mode, setMode] = useState('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const { isBlockedContact } = useBlockStatus();
   const navigate = useNavigate();
   const submit = async (event) => {
     event.preventDefault();
     setError('');
     try {
+      if (isBlockedContact(form.email)) {
+        setError('Your access has been restricted.');
+        return;
+      }
       if (mode === 'signup') {
         const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
         if (form.name) await updateProfile(cred.user, { displayName: form.name });

@@ -6,7 +6,9 @@ import { createContactWhatsAppMessage, openWhatsApp } from '../../utils/whatsapp
 
 export default function Contact() {
   const [settings, setSettings] = useState({ displayWhatsappNumber: '+94 77 719 3197', whatsappNumber: '94777193197', phoneNumber: '+94 77 719 3197' });
-  useEffect(() => onSnapshot(doc(db, 'siteSettings', 'main'), (snap) => snap.exists() && setSettings((s) => ({ ...s, ...snap.data() }))), []);
+  useEffect(() => onSnapshot(doc(db, 'siteSettings', 'main'), (snap) => snap.exists() && setSettings((s) => ({ ...s, ...snap.data() })), (error) => {
+    console.error('Failed to load contact settings from siteSettings/main', error);
+  }), []);
   return (
     <section id="contact" className="section bg-[var(--theme-section)]">
       <div className="container-shell">

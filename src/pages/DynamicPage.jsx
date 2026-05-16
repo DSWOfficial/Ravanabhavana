@@ -29,11 +29,11 @@ export default function DynamicPage({ slug: forcedSlug }) {
         if (!mounted) return;
         setState({ loading: false, page });
         if (page) {
-          document.title = page.seoTitle || page.title || 'රාවණ භවණ';
+          document.title = page.seoTitle || page.title || 'Ravana Bhavana | රාවණ භවණ';
           setMeta('meta[name="description"]', { identity: { name: 'description' }, content: page.seoDescription });
           setMeta('meta[property="og:title"]', { identity: { property: 'og:title' }, content: page.seoTitle || page.title });
           setMeta('meta[property="og:description"]', { identity: { property: 'og:description' }, content: page.seoDescription });
-          setMeta('meta[property="og:image"]', { identity: { property: 'og:image' }, content: page.ogImage });
+          setMeta('meta[property="og:image"]', { identity: { property: 'og:image' }, content: page.openGraphImageUrl || page.ogImage });
         }
       })
       .catch(() => mounted && setState({ loading: false, page: null }));
