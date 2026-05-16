@@ -11,7 +11,7 @@ export default function About() {
 
           <div className="mt-7 w-full max-w-sm overflow-hidden rounded-xl border border-[#b88934]/30 bg-[#1a110d] p-2 shadow-2xl">
             <img
-              src="/profilepic.png"
+              src="/profilepic.png?v=2"
               alt="S. Udara Sampath Rodrigo"
               className="aspect-[4/5] w-full rounded-lg object-cover"
             />
