@@ -2,18 +2,27 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Header from '../components/public/Header.jsx';
 import Footer from '../components/public/Footer.jsx';
-import { LibraryNotice, PlaylistBadge, SaveLoginHint, SearchBox, SectionTitle, VideoCard, filterVideos, useSavedLibrary, useVideoLibraryData } from '../components/public/VideoLibraryShared.jsx';
-import { getPlaylistStyle, uncategorizedPlaylist } from '../lib/videoLibrary.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
+import { LibraryNotice, PlaylistBadge, PlaylistCard, SaveLoginHint, SearchBox, SectionTitle, VideoCard, filterVideos, useSavedLibrary, useVideoLibraryData } from '../components/public/VideoLibraryShared.jsx';
+import { getPlaylistBreadcrumb, getPlaylistRoute, getPlaylistStyle, uncategorizedPlaylist } from '../lib/videoLibrary.js';
 
 export default function PlaylistDetailPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slugPath = params['*'] || 'uncategorized';
+  const pathParts = slugPath.split('/').filter(Boolean);
   const { loading, error, playlists, videos } = useVideoLibraryData();
   const saved = useSavedLibrary();
+  const { getLocalized, t } = useLanguage();
   const [search, setSearch] = useState('');
-  const playlist = playlists.find((item) => item.slug === slug) || (slug === 'uncategorized' ? uncategorizedPlaylist : null);
+  const playlistMap = useMemo(() => Object.fromEntries(playlists.map((item) => [item.id, item])), [playlists]);
+  const playlist = playlists.find((item) => [...(item.pathSlugs || []), item.slug].join('/') === slugPath)
+    || playlists.find((item) => item.slug === pathParts.at(-1))
+    || (slugPath === 'uncategorized' ? uncategorizedPlaylist : null);
+  const breadcrumbs = playlist ? getPlaylistBreadcrumb(playlist, playlistMap) : [];
+  const subPlaylists = useMemo(() => playlists.filter((item) => item.parentPlaylistId === playlist?.id), [playlist?.id, playlists]);
   const playlistVideos = useMemo(() => {
     if (!playlist) return [];
-    return filterVideos(videos.filter((video) => (video.playlistSlug || video.playlist?.slug) === playlist.slug || (playlist.id === 'uncategorized' && video.playlist?.id === 'uncategorized')), playlists, { search });
+    return filterVideos(videos.filter((video) => video.playlist?.id === playlist.id || (playlist.id === 'uncategorized' && video.playlist?.id === 'uncategorized')), playlists, { search });
   }, [playlist, playlists, search, videos]);
 
   return (
@@ -25,11 +34,16 @@ export default function PlaylistDetailPage() {
             <img className="aspect-video w-full rounded-lg object-cover shadow-2xl" src={playlist?.coverImageUrl || '/ravana-bhawana-logo.png'} alt="" />
             <div>
               <PlaylistBadge>{playlist?.topic || 'Playlist'}</PlaylistBadge>
-              <h1 className="mt-4 text-5xl font-black">{playlist?.title || (loading ? 'Loading playlist...' : 'Playlist not found')}</h1>
-              <p className="mt-4 max-w-3xl text-lg leading-8 opacity-90">{playlist?.description || 'Videos in this playlist will appear here.'}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm font-bold opacity-90">
+                <Link to="/videos">{t('video.library')}</Link>
+                {breadcrumbs.map((item) => <span key={item.id}>/ <Link to={getPlaylistRoute(item)}>{getLocalized(item, 'title', item.title)}</Link></span>)}
+              </div>
+              <h1 className="mt-4 text-5xl font-black">{playlist ? getLocalized(playlist, 'title', playlist.title) : (loading ? t('common.loading') : t('video.noPlaylists'))}</h1>
+              <p className="mt-4 max-w-3xl text-lg leading-8 opacity-90">{playlist ? getLocalized(playlist, 'description', playlist.description) : t('video.noVideos')}</p>
+              <p className="mt-3 text-sm font-black opacity-80">{subPlaylists.length} {t('video.folders')} / {playlistVideos.length} {t('video.videos')}</p>
               <div className="mt-6 flex flex-wrap gap-3">
-                {playlist && <button className="btn btn-gold" onClick={() => saved.toggleSavedPlaylist(playlist)}>{saved.savedPlaylists[playlist.id] ? 'Saved Playlist' : 'Save Playlist'}</button>}
-                <Link className="btn btn-outline border-white/30 text-inherit" to="/videos">Back to Video Library</Link>
+                {playlist && <button className="btn btn-gold" onClick={() => saved.toggleSavedPlaylist(playlist)}>{saved.savedPlaylists[playlist.id] ? t('common.saved') : t('common.save')}</button>}
+                <Link className="btn btn-outline border-white/30 text-inherit" to="/videos">{t('video.backToLibrary')}</Link>
               </div>
             </div>
           </div>
@@ -37,13 +51,21 @@ export default function PlaylistDetailPage() {
         <section className="section">
           <div className="container-shell">
             <LibraryNotice message={error || saved.message} />
-            <SectionTitle eyebrow={`${playlistVideos.length} videos`} title="Playlist Videos">
+            {!!subPlaylists.length && (
+              <section className="mb-10">
+                <SectionTitle eyebrow={`${subPlaylists.length} ${t('video.folders')}`} title={t('video.subPlaylist')} />
+                <div className="mt-6 grid gap-5 md:grid-cols-2">
+                  {subPlaylists.map((item) => <PlaylistCard key={item.id} playlist={item} saved={Boolean(saved.savedPlaylists[item.id])} onSave={saved.toggleSavedPlaylist} />)}
+                </div>
+              </section>
+            )}
+            <SectionTitle eyebrow={`${playlistVideos.length} ${t('video.videos')}`} title={t('video.videos')}>
               <div className="w-full max-w-md"><SearchBox value={search} onChange={setSearch} placeholder="Search within playlist..." /></div>
             </SectionTitle>
             <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {playlistVideos.map((video) => <VideoCard key={video.id} video={video} saved={Boolean(saved.savedVideos[video.id])} completed={Boolean(saved.progress[video.id]?.completed)} onSave={saved.toggleSavedVideo} onWatched={saved.markWatched} />)}
             </div>
-            {!loading && !playlistVideos.length && <p className="mt-6 rounded-lg bg-[var(--theme-section)] p-5 text-[var(--theme-muted)]">No videos in this playlist yet.</p>}
+            {!loading && !playlistVideos.length && <p className="mt-6 rounded-lg bg-[var(--theme-section)] p-5 text-[var(--theme-muted)]">{t('video.noVideos')}</p>}
           </div>
         </section>
       </main>

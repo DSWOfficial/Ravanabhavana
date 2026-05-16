@@ -36,7 +36,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/guidance" element={<GuidancePage />} />
         <Route path="/videos" element={<VideoLibraryPage />} />
-        <Route path="/videos/playlist/:slug" element={<PlaylistDetailPage />} />
+        <Route path="/videos/playlist/*" element={<PlaylistDetailPage />} />
         <Route path="/videos/:slug" element={<VideoDetailPage />} />
         <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />

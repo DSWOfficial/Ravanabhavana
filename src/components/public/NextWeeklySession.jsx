@@ -1,6 +1,7 @@
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Bell, CalendarPlus, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
 import { getCountdownParts } from '../../utils/dateTime.js';
 
@@ -19,6 +20,7 @@ function calendarUrl(session, start) {
 }
 
 export default function NextWeeklySession() {
+  const { getLocalized, t } = useLanguage();
   const [sessions, setSessions] = useState([]);
   const [tick, setTick] = useState(Date.now());
 
@@ -38,7 +40,7 @@ export default function NextWeeklySession() {
   if (!next) {
     return (
       <section id="weekly-sessions" className="section bg-[var(--theme-section)]">
-        <div className="container-shell"><div className="surface rounded-lg p-8 text-center"><h2 className="text-3xl font-black text-[var(--theme-primary)]">Next Weekly Session</h2><p className="mt-3 text-[var(--theme-muted)]">Next weekly session will be announced soon.</p></div></div>
+        <div className="container-shell"><div className="surface rounded-lg p-8 text-center"><h2 className="text-3xl font-black text-[var(--theme-primary)]">{t('weekly.next')}</h2><p className="mt-3 text-[var(--theme-muted)]">{t('weekly.empty')}</p></div></div>
       </section>
     );
   }
@@ -52,19 +54,19 @@ export default function NextWeeklySession() {
       <div className="container-shell">
         <article className="overflow-hidden rounded-lg bg-[var(--theme-hero)] text-[var(--theme-hero-text)] shadow-2xl lg:grid lg:grid-cols-[1.1fr_0.9fr]">
           <div className="p-7 sm:p-9">
-            <p className="text-sm font-black uppercase text-[var(--theme-accent)]">Next Weekly Session</p>
-            <h2 className="mt-3 text-4xl font-black">{next.title}</h2>
-            <p className="mt-2 text-xl font-bold text-[var(--theme-accent)]">{next.topic}</p>
-            <p className="mt-4 whitespace-pre-wrap leading-8 opacity-90">{next.description}</p>
+            <p className="text-sm font-black uppercase text-[var(--theme-accent)]">{t('weekly.next')}</p>
+            <h2 className="mt-3 text-4xl font-black">{getLocalized(next, 'title', next.title)}</h2>
+            <p className="mt-2 text-xl font-bold text-[var(--theme-accent)]">{getLocalized(next, 'topic', next.topic)}</p>
+            <p className="mt-4 whitespace-pre-wrap leading-8 opacity-90">{getLocalized(next, 'description', next.description)}</p>
             <p className="mt-4 font-bold">Host: {next.hostName || 'Ravana Bhavana'}</p>
             <p className="mt-2 font-bold">{next.date.toLocaleString()}</p>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {live ? <div className="col-span-full rounded-lg bg-[var(--theme-accent)] p-4 text-center font-black text-[var(--theme-hero)]">Session is live now</div> : [['Days', parts.days], ['Hours', parts.hours], ['Minutes', parts.minutes], ['Seconds', parts.seconds]].map(([label, value]) => <div className="rounded-lg bg-black/25 p-4 text-center" key={label}><b className="block text-3xl text-[var(--theme-accent)]">{String(value).padStart(2, '0')}</b><span className="text-xs font-bold uppercase">{label}</span></div>)}
+              {live ? <div className="col-span-full rounded-lg bg-[var(--theme-accent)] p-4 text-center font-black text-[var(--theme-hero)]">{t('weekly.live')}</div> : [[t('weekly.days'), parts.days], [t('weekly.hours'), parts.hours], [t('weekly.minutes'), parts.minutes], [t('weekly.seconds'), parts.seconds]].map(([label, value]) => <div className="rounded-lg bg-black/25 p-4 text-center" key={label}><b className="block text-3xl text-[var(--theme-accent)]">{String(value).padStart(2, '0')}</b><span className="text-xs font-bold uppercase">{label}</span></div>)}
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
-              {next.joinUrl && <a className="btn btn-primary" href={next.joinUrl} target="_blank" rel="noreferrer"><Video size={18} />{live ? 'Join now' : 'Join link'}</a>}
-              <a className="btn btn-outline border-[var(--theme-accent)] text-[var(--theme-hero-text)]" href={`https://wa.me/?text=${encodeURIComponent(reminder)}`} target="_blank" rel="noreferrer"><Bell size={18} />WhatsApp reminder</a>
-              <a className="btn btn-outline border-[var(--theme-accent)] text-[var(--theme-hero-text)]" href={calendarUrl(next, next.date)} target="_blank" rel="noreferrer"><CalendarPlus size={18} />Add to Calendar</a>
+              {next.joinUrl && <a className="btn btn-primary" href={next.joinUrl} target="_blank" rel="noreferrer"><Video size={18} />{t('weekly.join')}</a>}
+              <a className="btn btn-outline border-[var(--theme-accent)] text-[var(--theme-hero-text)]" href={`https://wa.me/?text=${encodeURIComponent(reminder)}`} target="_blank" rel="noreferrer"><Bell size={18} />{t('weekly.reminder')}</a>
+              <a className="btn btn-outline border-[var(--theme-accent)] text-[var(--theme-hero-text)]" href={calendarUrl(next, next.date)} target="_blank" rel="noreferrer"><CalendarPlus size={18} />{t('weekly.addCalendar')}</a>
             </div>
           </div>
           {next.imageUrl && <img src={next.imageUrl} alt="" className="h-full min-h-72 w-full object-cover" />}

@@ -1,4 +1,5 @@
 import { Mail, MessageCircle, Phone, PlayCircle } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 function SectionShell({ children, alt = false }) {
   return <section className={`section ${alt ? 'bg-[var(--theme-section)]' : 'bg-[var(--theme-surface)]'}`}><div className="container-shell">{children}</div></section>;
@@ -9,7 +10,7 @@ function LinkButton({ label, url, variant = 'primary' }) {
   return <a className={`btn ${variant === 'outline' ? 'btn-outline' : 'btn-primary'}`} href={url}>{label}</a>;
 }
 
-function renderSection(section, index) {
+function renderSection(section, index, t, getLocalized) {
   if (section.type === 'html') {
     return (
       <div
@@ -25,10 +26,10 @@ function renderSection(section, index) {
       <section key={section.id || index} className="relative overflow-hidden bg-[var(--theme-hero)] text-[var(--theme-hero-text)]">
         <div className="container-shell grid min-h-[560px] items-center gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            {section.eyebrow && <p className="text-sm font-bold text-[var(--theme-accent)]">{section.eyebrow}</p>}
-            <h1 className="mt-4 text-5xl font-black leading-tight sm:text-7xl">{section.title}</h1>
-            {section.subtitle && <p className="mt-3 text-2xl font-bold text-[color-mix(in_srgb,var(--theme-accent)_76%,white)]">{section.subtitle}</p>}
-            {section.body && <p className="mt-6 max-w-2xl whitespace-pre-wrap text-lg leading-8 text-[color-mix(in_srgb,var(--theme-hero-text)_84%,var(--theme-accent))]">{section.body}</p>}
+            {section.eyebrow && <p className="text-sm font-bold text-[var(--theme-accent)]">{getLocalized(section, 'eyebrow', section.eyebrow)}</p>}
+            <h1 className="mt-4 text-5xl font-black leading-tight sm:text-7xl">{getLocalized(section, 'title', section.title)}</h1>
+            {section.subtitle && <p className="mt-3 text-2xl font-bold text-[color-mix(in_srgb,var(--theme-accent)_76%,white)]">{getLocalized(section, 'subtitle', section.subtitle)}</p>}
+            {section.body && <p className="mt-6 max-w-2xl whitespace-pre-wrap text-lg leading-8 text-[color-mix(in_srgb,var(--theme-hero-text)_84%,var(--theme-accent))]">{getLocalized(section, 'body', section.body)}</p>}
             <div className="mt-8 flex flex-wrap gap-3">
               <LinkButton label={section.primaryLabel} url={section.primaryUrl} />
               <LinkButton label={section.secondaryLabel} url={section.secondaryUrl} variant="outline" />
@@ -55,7 +56,7 @@ function renderSection(section, index) {
   }
 
   if (section.type === 'video') {
-    return <SectionShell key={section.id || index} alt={index % 2 === 1}><div className="surface rounded-lg p-6"><PlayCircle className="text-[var(--theme-accent)]" /><h2 className="mt-3 text-3xl font-black text-[var(--theme-primary)]">{section.title}</h2><p className="mt-3 text-[var(--theme-muted)]">{section.body}</p><a className="btn btn-primary mt-5" href={section.videoUrl} target="_blank" rel="noreferrer">Watch video</a></div></SectionShell>;
+    return <SectionShell key={section.id || index} alt={index % 2 === 1}><div className="surface rounded-lg p-6"><PlayCircle className="text-[var(--theme-accent)]" /><h2 className="mt-3 text-3xl font-black text-[var(--theme-primary)]">{getLocalized(section, 'title', section.title)}</h2><p className="mt-3 text-[var(--theme-muted)]">{getLocalized(section, 'body', section.body)}</p><a className="btn btn-primary mt-5" href={section.videoUrl} target="_blank" rel="noreferrer">{t('common.watch')}</a></div></SectionShell>;
   }
 
   if (section.type === 'quote') {
@@ -82,9 +83,10 @@ function renderSection(section, index) {
 }
 
 export default function PageRenderer({ page }) {
+  const { t, getLocalized } = useLanguage();
   if (!page) return null;
   if (page.content && !(page.sections || []).length) {
     return <div className="cms-html-section" dangerouslySetInnerHTML={{ __html: page.content }} />;
   }
-  return <>{(page.sections || []).map(renderSection)}</>;
+  return <>{(page.sections || []).map((section, index) => renderSection(section, index, t, getLocalized))}</>;
 }

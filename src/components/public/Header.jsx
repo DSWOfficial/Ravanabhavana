@@ -2,22 +2,25 @@ import { Link } from 'react-router-dom';
 import { LogOut, Menu, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { languages, useLanguage } from '../../context/LanguageContext.jsx';
 import { listNavigation } from '../../lib/cms.js';
 
 const fallbackLinks = [
-  ['Home', '/#home'],
-  ['About', '/#about'],
-  ['Services', '/#services'],
-  ['Videos', '/videos'],
-  ['Weekly Session', '/#session'],
-  ['Support', '/#support'],
-  ['Contact', '/#contact'],
+  ['nav.home', '/#home'],
+  ['nav.about', '/#about'],
+  ['nav.services', '/#services'],
+  ['nav.videos', '/videos'],
+  ['nav.weeklySession', '/#session'],
+  ['nav.support', '/#support'],
+  ['nav.contact', '/#contact'],
 ];
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [navItems, setNavItems] = useState([]);
   const { user, isAdmin, logout } = useAuth();
+  const { currentLanguage, setLanguage, t, getLocalized } = useLanguage();
 
   useEffect(() => {
     let mounted = true;
@@ -27,7 +30,23 @@ export default function Header() {
     return () => { mounted = false; };
   }, []);
 
-  const links = navItems.length ? navItems.map((item) => [item.label, item.url]) : fallbackLinks;
+  const links = navItems.length ? navItems.map((item) => [getLocalized(item, 'label', item.label), item.url]) : fallbackLinks.map(([key, href]) => [t(key), href]);
+  const languageToggle = (
+    <div className="relative">
+      <button className="language-toggle" type="button" onClick={() => setLanguageOpen((value) => !value)} aria-label="Change language">
+        {languages[currentLanguage]} <span>▾</span>
+      </button>
+      {languageOpen && (
+        <div className="language-menu">
+          {Object.entries(languages).map(([code, label]) => (
+            <button key={code} type="button" onClick={() => { setLanguage(code); setLanguageOpen(false); }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-[color-mix(in_srgb,var(--theme-accent)_24%,transparent)] bg-[color-mix(in_srgb,var(--theme-surface)_94%,transparent)] backdrop-blur">
@@ -44,14 +63,16 @@ export default function Header() {
         <div className="header-desktop-actions items-center gap-2">
           {user ? (
             <>
-              <Link className="btn btn-outline header-action-btn" to="/dashboard"><UserRound size={18} />Dashboard</Link>
-              {isAdmin && <Link className="btn btn-outline header-action-btn" to="/admin">Admin</Link>}
-              <button className="btn btn-primary header-action-btn" onClick={logout}><LogOut size={18} />Logout</button>
+              {languageToggle}
+              <Link className="btn btn-outline header-action-btn" to="/dashboard"><UserRound size={18} />{t('nav.dashboard')}</Link>
+              {isAdmin && <Link className="btn btn-outline header-action-btn" to="/admin">{t('nav.admin')}</Link>}
+              <button className="btn btn-primary header-action-btn" onClick={logout}><LogOut size={18} />{t('nav.logout')}</button>
             </>
           ) : (
             <>
-              <Link className="btn btn-outline header-action-btn" to="/login">Login</Link>
-              <Link className="btn btn-primary header-action-btn" to="/videos">Continue as Guest</Link>
+              {languageToggle}
+              <Link className="btn btn-outline header-action-btn" to="/login">{t('nav.login')}</Link>
+              <Link className="btn btn-primary header-action-btn" to="/videos">{t('nav.guest')}</Link>
             </>
           )}
         </div>
@@ -68,10 +89,11 @@ export default function Header() {
           ))}
           {user ? (
             <>
-              <Link className="btn btn-primary" to="/dashboard">Dashboard</Link>
-              {isAdmin && <Link className="btn btn-outline" to="/admin">Admin</Link>}
+              <div className="justify-self-start">{languageToggle}</div>
+              <Link className="btn btn-primary" to="/dashboard">{t('nav.dashboard')}</Link>
+              {isAdmin && <Link className="btn btn-outline" to="/admin">{t('nav.admin')}</Link>}
             </>
-          ) : <Link className="btn btn-primary" to="/login">Login</Link>}
+          ) : <><div className="justify-self-start">{languageToggle}</div><Link className="btn btn-primary" to="/login">{t('nav.login')}</Link></>}
         </div>
       )}
     </header>

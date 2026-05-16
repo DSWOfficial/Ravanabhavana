@@ -3,8 +3,9 @@ import { Bookmark, CheckCircle2, Layers3, LogIn, NotebookPen, PlayCircle, Search
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
-import { getPlaylistStyle, normalizePlaylist, normalizeVideo, searchMatchesVideo, sortByOrderThenNewest, toMillis, uncategorizedPlaylist } from '../../lib/videoLibrary.js';
+import { getPlaylistRoute, getPlaylistStyle, normalizePlaylist, normalizeVideo, searchMatchesVideo, sortByOrderThenNewest, toMillis, uncategorizedPlaylist } from '../../lib/videoLibrary.js';
 
 export function useVideoLibraryData() {
   const [playlists, setPlaylists] = useState([]);
@@ -52,13 +53,26 @@ export function useVideoLibraryData() {
 
   const videosWithPlaylists = useMemo(() => videos.map((video) => {
     const playlist = playlistMap[video.playlistId] || playlists.find((item) => item.slug === video.playlistSlug) || uncategorizedPlaylist;
-    return { ...video, playlistId: video.playlistId || playlist.id, playlistSlug: video.playlistSlug || playlist.slug, playlist };
+    return {
+      ...video,
+      playlistId: video.playlistId || playlist.id,
+      playlistSlug: video.playlistSlug || playlist.slug,
+      playlistTitle: video.playlistTitle || playlist.title,
+      parentPlaylistId: video.parentPlaylistId || playlist.parentPlaylistId || null,
+      playlistPath: video.playlistPath?.length ? video.playlistPath : [...(playlist.path || []), playlist.id].filter((id) => id !== 'uncategorized'),
+      playlistPathSlugs: video.playlistPathSlugs?.length ? video.playlistPathSlugs : [...(playlist.pathSlugs || []), playlist.slug].filter((slug) => slug !== 'uncategorized'),
+      playlist,
+    };
   }), [playlistMap, playlists, videos]);
 
   const playlistsWithCounts = useMemo(() => {
     const counts = videosWithPlaylists.reduce((acc, video) => ({ ...acc, [video.playlist.id]: (acc[video.playlist.id] || 0) + 1 }), {});
+    const childCounts = playlists.reduce((acc, playlist) => {
+      if (!playlist.parentPlaylistId) return acc;
+      return { ...acc, [playlist.parentPlaylistId]: (acc[playlist.parentPlaylistId] || 0) + 1 };
+    }, {});
     const hasUncategorized = videosWithPlaylists.some((video) => video.playlist.id === 'uncategorized');
-    return [...playlists, ...(hasUncategorized ? [uncategorizedPlaylist] : [])].map((playlist) => ({ ...playlist, videoCount: counts[playlist.id] || 0 }));
+    return [...playlists, ...(hasUncategorized ? [uncategorizedPlaylist] : [])].map((playlist) => ({ ...playlist, videoCount: counts[playlist.id] || 0, subPlaylistCount: childCounts[playlist.id] || 0 }));
   }, [playlists, videosWithPlaylists]);
 
   return { loading, error, playlists: playlistsWithCounts, videos: videosWithPlaylists, playlistMap };
@@ -97,7 +111,7 @@ export function useSavedLibrary() {
     window.setTimeout(() => setMessage(''), 2600);
   };
 
-  const requireLogin = () => show('Please log in first.');
+  const requireLogin = () => show('Please log in to save videos and playlists.');
 
   const toggleSavedVideo = async (video) => {
     if (!user) return requireLogin();
@@ -148,26 +162,28 @@ export function useSavedLibrary() {
 
 export function PlaylistCard({ playlist, onSave, saved }) {
   const theme = playlist.theme;
+  const { getLocalized, t } = useLanguage();
   return (
     <article className={`playlist-card playlist-effect-${theme.effect} interactive-card overflow-hidden rounded-lg border-2`} style={getPlaylistStyle(playlist)}>
-      <Link to={`/videos/playlist/${playlist.slug}`} className="block">
+      <Link to={getPlaylistRoute(playlist)} className="block">
         <img src={playlist.coverImageUrl || '/ravana-bhawana-logo.png'} alt="" className="aspect-video w-full object-cover opacity-90" />
         <div className="p-5">
-          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase" style={{ backgroundColor: theme.accentColor, color: theme.backgroundColor }}>{playlist.topic}</span>
-          <h3 className="mt-4 text-2xl font-black">{playlist.title}</h3>
-          <p className="mt-2 line-clamp-3 leading-7 opacity-90">{playlist.description}</p>
-          <p className="mt-4 text-sm font-black opacity-80">{playlist.videoCount || 0} videos</p>
+          <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase" style={{ backgroundColor: theme.accentColor, color: theme.backgroundColor }}>{getLocalized(playlist, 'topic', playlist.topic)}</span>
+          <h3 className="mt-4 text-2xl font-black">{getLocalized(playlist, 'title', playlist.title)}</h3>
+          <p className="mt-2 line-clamp-3 leading-7 opacity-90">{getLocalized(playlist, 'description', playlist.description)}</p>
+          <p className="mt-4 text-sm font-black opacity-80">{playlist.subPlaylistCount || 0} {t('video.folders')} / {playlist.videoCount || 0} {t('video.videos')}</p>
         </div>
       </Link>
       <div className="flex flex-wrap gap-2 px-5 pb-5">
-        <Link className="btn btn-gold" to={`/videos/playlist/${playlist.slug}`}><PlayCircle size={17} />Watch Playlist</Link>
-        <button className="btn btn-outline border-white/30 text-inherit" type="button" onClick={() => onSave(playlist)} title="Save playlist" aria-label={`Save ${playlist.title}`}><Bookmark size={17} />{saved ? 'Saved' : 'Save'}</button>
+        <Link className="btn btn-gold" to={getPlaylistRoute(playlist)}><PlayCircle size={17} />{t('video.playlist')}</Link>
+        <button className="btn btn-outline border-white/30 text-inherit" type="button" onClick={() => onSave(playlist)} title={t('common.save')} aria-label={`${t('common.save')} ${getLocalized(playlist, 'title', playlist.title)}`}><Bookmark size={17} />{saved ? t('common.saved') : t('common.save')}</button>
       </div>
     </article>
   );
 }
 
 export function VideoCard({ video, onSave, onWatched, saved, completed }) {
+  const { getLocalized, t } = useLanguage();
   return (
     <article className="surface interactive-card overflow-hidden rounded-lg">
       <Link to={`/videos/${video.slug}`} className="block">
@@ -177,18 +193,18 @@ export function VideoCard({ video, onSave, onWatched, saved, completed }) {
         </div>
         <div className="p-5">
           <div className="flex flex-wrap gap-2">
-            {video.featured && <span className="rounded-full bg-[var(--theme-accent)] px-3 py-1 text-xs font-black text-[#1b120d]">Featured</span>}
+            {video.featured && <span className="rounded-full bg-[var(--theme-accent)] px-3 py-1 text-xs font-black text-[#1b120d]">{t('common.featured')}</span>}
             <span className="rounded-full bg-[var(--theme-section)] px-3 py-1 text-xs font-black text-[var(--theme-primary)]">{video.level}</span>
           </div>
-          <h3 className="mt-3 text-xl font-black text-[var(--theme-primary)]">{video.title}</h3>
-          <p className="mt-1 text-sm font-bold text-[var(--theme-muted)]">{video.playlist?.title || 'Uncategorized'}</p>
-          <p className="mt-3 line-clamp-3 leading-6 text-[var(--theme-text)]">{video.description}</p>
+          <h3 className="mt-3 text-xl font-black text-[var(--theme-primary)]">{getLocalized(video, 'title', video.title)}</h3>
+          <p className="mt-1 text-sm font-bold text-[var(--theme-muted)]">{getLocalized(video.playlist, 'title', video.playlist?.title || 'Uncategorized')}</p>
+          <p className="mt-3 line-clamp-3 leading-6 text-[var(--theme-text)]">{getLocalized(video, 'description', video.description)}</p>
         </div>
       </Link>
       <div className="flex flex-wrap gap-2 px-5 pb-5">
-        <Link className="btn btn-primary" to={`/videos/${video.slug}`} title="Watch video"><PlayCircle size={17} />Watch</Link>
-        <button className="btn btn-outline" type="button" onClick={() => onSave(video)} title="Save video" aria-label={`Save ${video.title}`}><Bookmark size={17} />{saved ? 'Saved' : 'Save'}</button>
-        <button className="btn btn-outline" type="button" onClick={() => onWatched(video)} title="Mark watched" aria-label={`Mark ${video.title} watched`}><CheckCircle2 size={17} />{completed ? 'Watched' : 'Done'}</button>
+        <Link className="btn btn-primary" to={`/videos/${video.slug}`} title={t('common.watch')}><PlayCircle size={17} />{t('common.watch')}</Link>
+        <button className="btn btn-outline" type="button" onClick={() => onSave(video)} title={t('common.save')} aria-label={`${t('common.save')} ${getLocalized(video, 'title', video.title)}`}><Bookmark size={17} />{saved ? t('common.saved') : t('common.save')}</button>
+        <button className="btn btn-outline" type="button" onClick={() => onWatched(video)} title={t('common.watched')} aria-label={`${t('common.watched')} ${getLocalized(video, 'title', video.title)}`}><CheckCircle2 size={17} />{completed ? t('common.watched') : t('common.done')}</button>
       </div>
     </article>
   );
@@ -200,22 +216,24 @@ export function LibraryNotice({ message }) {
 }
 
 export function SearchBox({ value, onChange, placeholder = 'Search videos and playlists...' }) {
+  const { t } = useLanguage();
   return (
     <label className="relative block">
       <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--theme-muted)]" size={18} />
-      <input className="input video-library-search-input" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      <input className="input video-library-search-input" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder === 'Search videos and playlists...' ? t('common.search') : placeholder} />
     </label>
   );
 }
 
 export function SaveLoginHint({ message }) {
+  const { t } = useLanguage();
   if (!message) return null;
-  if (message === 'Please log in first.') {
+  if (message === 'Please log in to save videos and playlists.') {
     return (
       <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
         <div className="surface max-w-md rounded-lg p-6 text-center">
           <LogIn className="mx-auto text-[var(--theme-accent)]" size={32} />
-          <h3 className="mt-3 text-2xl font-black text-[var(--theme-primary)]">Please log in first</h3>
+          <h3 className="mt-3 text-2xl font-black text-[var(--theme-primary)]">{t('video.loginToSave')}</h3>
           <p className="mt-2 text-[var(--theme-muted)]">Log in to save videos, playlists, and watch progress.</p>
           <Link className="btn btn-primary mt-5" to="/login">Login</Link>
         </div>
@@ -226,25 +244,26 @@ export function SaveLoginHint({ message }) {
 }
 
 export function VideoNotesModal({ video, publicNotes, user, note, setNote, onClose, onSave }) {
+  const { getLocalized, t } = useLanguage();
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">
       <div className="surface max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg p-6">
         <div className="flex items-start justify-between gap-3">
-          <div><h3 className="text-2xl font-black text-[var(--theme-primary)]">{video.title}</h3><p className="text-sm text-[var(--theme-muted)]">Public notes and your private notebook</p></div>
+          <div><h3 className="text-2xl font-black text-[var(--theme-primary)]">{getLocalized(video, 'title', video.title)}</h3><p className="text-sm text-[var(--theme-muted)]">{t('video.publicNotes')} / {t('video.privateNotebook')}</p></div>
           <button className="btn btn-outline" onClick={onClose} aria-label="Close notes"><X size={18} /></button>
         </div>
         <section className="mt-5">
-          <h4 className="font-black text-[var(--theme-primary)]">Public notes</h4>
+          <h4 className="font-black text-[var(--theme-primary)]">{t('video.publicNotes')}</h4>
           <div className="mt-3 grid gap-3">
             {publicNotes.map((item) => <article className="rounded-lg bg-[var(--theme-section)] p-4" key={item.id}><b className="text-[var(--theme-primary)]">{item.title || 'Note'}</b><p className="mt-2 whitespace-pre-wrap leading-7 text-[var(--theme-muted)]">{item.content}</p></article>)}
-            {!publicNotes.length && <p className="rounded-lg bg-[var(--theme-section)] p-4 text-[var(--theme-muted)]">Notes coming soon.</p>}
+            {!publicNotes.length && <p className="rounded-lg bg-[var(--theme-section)] p-4 text-[var(--theme-muted)]">{t('video.notesSoon')}</p>}
           </div>
         </section>
         <section className="mt-5">
-          <h4 className="font-black text-[var(--theme-primary)]">Private notebook</h4>
-          {!user ? <p className="mt-3 rounded-lg bg-amber-50 p-4 font-semibold text-amber-800">Please log in to save private notes.</p> : <>
+          <h4 className="font-black text-[var(--theme-primary)]">{t('video.privateNotebook')}</h4>
+          {!user ? <p className="mt-3 rounded-lg bg-amber-50 p-4 font-semibold text-amber-800">{t('video.loginToSave')}</p> : <>
             <textarea className="input mt-3 min-h-40" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Write your private note..." />
-            <button className="btn btn-primary mt-3" onClick={onSave}>Save note</button>
+            <button className="btn btn-primary mt-3" onClick={onSave}>{t('common.save')}</button>
           </>}
         </section>
       </div>

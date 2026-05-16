@@ -3,6 +3,7 @@ import { CalendarClock, Video } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useBlockStatus } from '../../context/BlockContext.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
 import { formatSinhalaDate, getCountdownParts, getNextWeeklySession, isSessionExpired } from '../../utils/dateTime.js';
 
@@ -45,6 +46,7 @@ function LiveCountdown({ targetDate }) {
 export default function WeeklySession() {
   const { user } = useAuth();
   const { blocked } = useBlockStatus();
+  const { t } = useLanguage();
   const [sessions, setSessions] = useState([]);
   const [schedule, setSchedule] = useState({
     day: 'Saturday',
@@ -96,7 +98,7 @@ export default function WeeklySession() {
     <section id="session" className="section bg-[var(--theme-section)]">
       <div className="container-shell grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
-          <p className="eyebrow">Weekly Session</p>
+          <p className="eyebrow">{t('nav.weeklySession')}</p>
           <h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">සතිපතා Zoom සැසිය</h2>
           <p className="mt-4 leading-7 text-[var(--theme-muted)]">{schedule.description}</p>
         </div>
@@ -115,7 +117,7 @@ export default function WeeklySession() {
 
           {active ? (
             <button className="btn btn-primary mt-6" onClick={join}>
-              <Video size={18} />Join Zoom
+              <Video size={18} />{t('weekly.joinZoom')}
             </button>
           ) : (
             <p className="mt-6 font-semibold text-[var(--theme-muted)]">Zoom link එක ඉක්මනින් පළ කරනු ඇත.</p>

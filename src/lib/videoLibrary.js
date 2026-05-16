@@ -91,9 +91,17 @@ export const uncategorizedPlaylist = {
   slug: 'uncategorized',
   description: 'Videos that are not assigned to a playlist yet.',
   coverImageUrl: '/ravana-bhawana-logo.png',
+  parentPlaylistId: null,
+  parentPlaylistSlug: null,
+  depth: 0,
+  path: [],
+  pathSlugs: [],
   topic: 'Spiritual Guidance',
   isPublished: true,
   order: 9999,
+  learningPathEnabled: false,
+  learningPathOrder: 9999,
+  learningPathLabel: 'Uncategorized',
   theme: defaultPlaylistTheme,
 };
 
@@ -114,6 +122,9 @@ export function tagsFromText(value = '') {
 
 export function normalizePlaylist(data = {}, id = data.id) {
   const theme = { ...defaultPlaylistTheme, ...(data.theme || {}) };
+  const parentPlaylistId = data.parentPlaylistId || null;
+  const path = Array.isArray(data.path) ? data.path : [];
+  const pathSlugs = Array.isArray(data.pathSlugs) ? data.pathSlugs : [];
   return {
     ...data,
     id,
@@ -121,9 +132,17 @@ export function normalizePlaylist(data = {}, id = data.id) {
     slug: data.slug || slugify(data.title || id || 'playlist'),
     description: data.description || '',
     coverImageUrl: data.coverImageUrl || data.imageUrl || '/ravana-bhawana-logo.png',
+    parentPlaylistId,
+    parentPlaylistSlug: data.parentPlaylistSlug || null,
+    depth: Number(data.depth ?? path.length ?? (parentPlaylistId ? 1 : 0)),
+    path,
+    pathSlugs,
     topic: data.topic || 'Spiritual Guidance',
     isPublished: data.isPublished ?? data.published ?? true,
     order: Number(data.order ?? data.display_order ?? 999),
+    learningPathEnabled: Boolean(data.learningPathEnabled),
+    learningPathOrder: Number(data.learningPathOrder ?? 999),
+    learningPathLabel: data.learningPathLabel || data.title || 'Learning step',
     theme,
   };
 }
@@ -142,8 +161,14 @@ export function normalizeVideo(data = {}, id = data.id) {
     thumbnailUrl: data.thumbnailUrl || data.thumbnail_url || (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : '/ravana-bhawana-logo.png'),
     playlistId: data.playlistId || '',
     playlistSlug: data.playlistSlug || '',
+    playlistTitle: data.playlistTitle || '',
+    parentPlaylistId: data.parentPlaylistId || null,
+    playlistPath: Array.isArray(data.playlistPath) ? data.playlistPath : [],
+    playlistPathSlugs: Array.isArray(data.playlistPathSlugs) ? data.playlistPathSlugs : [],
     duration: data.duration || '',
     tags: tagsFromText(data.tags),
+    tags_si: tagsFromText(data.tags_si),
+    tags_en: tagsFromText(data.tags_en),
     level: data.level || 'Beginner',
     isPublished: data.isPublished ?? data.published ?? data.isActive ?? data.is_active ?? true,
     featured: Boolean(data.featured || data.isLatest || data.is_latest),
@@ -175,7 +200,36 @@ export function searchMatchesVideo(video, playlist, term) {
     ...(video.tags || []),
     playlist?.title,
     playlist?.topic,
+    ...(video.playlistPathSlugs || []),
   ].filter(Boolean).join(' ').toLowerCase().includes(needle);
+}
+
+export function getPlaylistAncestors(playlist, playlistMap) {
+  if (!playlist || playlist.id === 'uncategorized') return [];
+  const path = Array.isArray(playlist.path) ? playlist.path : [];
+  return path.map((id) => playlistMap[id]).filter(Boolean);
+}
+
+export function getPlaylistBreadcrumb(playlist, playlistMap) {
+  return [...getPlaylistAncestors(playlist, playlistMap), playlist].filter(Boolean);
+}
+
+export function getPlaylistRoute(playlist) {
+  if (!playlist || playlist.id === 'uncategorized') return '/videos/playlist/uncategorized';
+  const slugs = [...(playlist.pathSlugs || []), playlist.slug].filter(Boolean);
+  return `/videos/playlist/${slugs.join('/')}`;
+}
+
+export function buildPlaylistOptions(playlists = []) {
+  const children = {};
+  playlists.forEach((playlist) => {
+    const key = playlist.parentPlaylistId || 'root';
+    children[key] = [...(children[key] || []), playlist];
+  });
+  const walk = (parentId = 'root', depth = 0) => (children[parentId] || [])
+    .sort((a, b) => (a.order - b.order) || a.title.localeCompare(b.title))
+    .flatMap((playlist) => [{ ...playlist, optionDepth: depth }, ...walk(playlist.id, depth + 1)]);
+  return walk();
 }
 
 export function getPlaylistStyle(playlist) {

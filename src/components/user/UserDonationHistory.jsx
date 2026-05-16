@@ -1,9 +1,11 @@
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { formatSinhalaDate } from '../../utils/dateTime.js';
 import { useUserDashboardData } from './useUserDashboardData.js';
 
 export default function UserDonationHistory() {
   const { donations } = useUserDashboardData();
-  return <History title="Donation history" items={donations.map((d) => `${d.amount || '-'} · ${d.purpose || '-'} · ${formatSinhalaDate(d.createdAt)}`)} empty="Donation form history තවම නැත." />;
+  const { t } = useLanguage();
+  return <History title={t('dashboard.donationHistory')} items={donations.map((d) => `${d.amount || '-'} · ${d.purpose || '-'} · ${formatSinhalaDate(d.createdAt)}`)} empty={t('video.noVideos')} />;
 }
 
 export function History({ title, items, empty }) {

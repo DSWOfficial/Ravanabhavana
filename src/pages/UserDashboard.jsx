@@ -9,16 +9,18 @@ import UserBadges from '../components/user/UserBadges.jsx';
 import UserDonationHistory from '../components/user/UserDonationHistory.jsx';
 import UserSessionHistory from '../components/user/UserSessionHistory.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 export default function UserDashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   return (
     <>
       <Header />
       <main className="section bg-[var(--theme-section)]">
         <div className="container-shell">
           <div className="surface rounded-lg p-7">
-            <p className="eyebrow">User dashboard</p>
+            <p className="eyebrow">{t('dashboard.title')}</p>
             <h1 className="mt-2 text-4xl font-black text-[var(--theme-primary)]">ආයුබෝවන්, {user?.displayName || user?.email}</h1>
             <p className="mt-2 text-[var(--theme-muted)]">ඔබේ ප්‍රගතිය, සුරැකි වීඩියෝ, සටහන් සහ සැසි ඉතිහාසය මෙතැනින් බලන්න.</p>
           </div>
@@ -29,7 +31,7 @@ export default function UserDashboard() {
             <UserNotes />
             <div className="grid gap-6 lg:grid-cols-2"><UserSessionHistory /><UserDonationHistory /></div>
             <UserBadges />
-            <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black text-[var(--theme-primary)]">Account settings</h2><p className="mt-2 text-[var(--theme-muted)]">{user?.email}</p></section>
+            <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black text-[var(--theme-primary)]">{t('dashboard.accountSettings')}</h2><p className="mt-2 text-[var(--theme-muted)]">{user?.email}</p></section>
           </div>
         </div>
       </main>

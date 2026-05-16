@@ -2,6 +2,7 @@ import { addDoc, collection, doc, onSnapshot, serverTimestamp } from 'firebase/f
 import { Copy, Gift } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
 import { copyText } from '../../utils/copy.js';
 import { createDonationWhatsAppMessage, openWhatsApp } from '../../utils/whatsapp.js';
@@ -10,6 +11,7 @@ const defaults = { organizationName: 'රාවණ භවණ', accountHolderName
 
 export default function Support() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [settings, setSettings] = useState(defaults);
   const [form, setForm] = useState({ name: '', country: 'Sri Lanka', area: '', amount: '', phone: '', purpose: defaults.purposes[0], note: '' });
   useEffect(() => onSnapshot(doc(db, 'donationSettings', 'main'), (snap) => snap.exists() && setSettings({ ...defaults, ...snap.data() }), (error) => {
@@ -26,24 +28,25 @@ export default function Support() {
     }
     openWhatsApp('94777193197', createDonationWhatsAppMessage(form));
   };
-  const bank = [['Organization name', settings.organizationName], ['Account holder name', settings.accountHolderName], ['Bank name', settings.bankName], ['Branch', settings.branch], ['Account number', settings.accountNumber]];
+  const bank = [[t('support.organizationName'), settings.organizationName], [t('support.accountHolderName'), settings.accountHolderName], [t('support.bankName'), settings.bankName], [t('support.branch'), settings.branch], [t('support.accountNumber'), settings.accountNumber]];
+  const fields = [['name', t('support.name')], ['country', 'Sri Lanka'], ['area', t('support.area')], ['amount', t('support.amount')], ['phone', t('support.phone')]];
   return (
     <section id="support" className="section bg-[var(--theme-surface)]">
       <div className="container-shell grid gap-8 lg:grid-cols-2">
         <div>
-          <p className="eyebrow">Support</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">පරිත්‍යාග සහාය</h2>
+          <p className="eyebrow">{t('support.title')}</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">{t('support.donation')}</h2>
           <div className="mt-6 grid gap-3">
-            {bank.map(([label, value]) => <div key={label} className="surface flex items-center justify-between gap-3 rounded-lg p-4"><div><p className="text-sm font-bold text-[var(--theme-muted)]">{label}</p><p className="font-black text-[var(--theme-text)]">{value || 'යාවත්කාලීන කිරීමට ඇත'}</p></div><button className="btn btn-outline" onClick={() => copyText(value)}><Copy size={17} /></button></div>)}
+            {bank.map(([label, value]) => <div key={label} className="surface flex items-center justify-between gap-3 rounded-lg p-4"><div><p className="text-sm font-bold text-[var(--theme-muted)]">{label}</p><p className="font-black text-[var(--theme-text)]">{value || '-'}</p></div><button className="btn btn-outline" onClick={() => copyText(value)}><Copy size={17} /></button></div>)}
           </div>
         </div>
         <form onSubmit={submit} className="surface rounded-lg p-6">
           <Gift className="text-[var(--theme-accent)]" />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {['name', 'country', 'area', 'amount', 'phone'].map((field) => <input key={field} required={field === 'name'} className="input" placeholder={field} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />)}
+            {fields.map(([field, label]) => <input key={field} required={field === 'name'} className="input" placeholder={label} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />)}
             <select className="input" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })}>{(settings.purposes || []).map((p) => <option key={p}>{p}</option>)}</select>
           </div>
-          <textarea className="input mt-3 min-h-28" placeholder="Extra note" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-          <button className="btn btn-primary mt-4" type="submit">WhatsApp පණිවිඩය යවන්න</button>
+          <textarea className="input mt-3 min-h-28" placeholder={t('support.extraNote')} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <button className="btn btn-primary mt-4" type="submit">{t('support.sendWhatsapp')}</button>
         </form>
       </div>
     </section>

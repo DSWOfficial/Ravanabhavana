@@ -3,11 +3,13 @@ import { Bookmark, CheckCircle2, Eye, LogIn, NotebookPen, PlayCircle, X } from '
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
 import { sortVideosByOrder } from '../../utils/progress.js';
 
 export default function Videos() {
   const { user } = useAuth();
+  const { getLocalized, t } = useLanguage();
   const [videos, setVideos] = useState([]);
   const [progress, setProgress] = useState({});
   const [videoNotes, setVideoNotes] = useState({});
@@ -133,7 +135,7 @@ export default function Videos() {
     <section id="videos" className="section bg-[var(--theme-surface)]">
       <div className="container-shell">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div><p className="eyebrow">YouTube Library</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">Video Library</h2></div>
+          <div><p className="eyebrow">{t('video.youtubeLibrary')}</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">{t('video.library')}</h2></div>
           {!user && <p className="rounded-lg bg-[var(--theme-section)] px-4 py-3 font-semibold text-[var(--theme-muted)]">Log in to save progress, bookmarks, and private notes.</p>}
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -144,28 +146,28 @@ export default function Videos() {
             const publicNotes = videoNotes[video.id] || [];
             return (
               <article key={video.id} className="surface interactive-card overflow-hidden rounded-lg">
-                <img src={video.thumbnailUrl || '/ravana-bhawana-logo.png'} alt={video.title} className="aspect-video w-full bg-[var(--theme-hero)] object-cover" />
+                <img src={video.thumbnailUrl || '/ravana-bhawana-logo.png'} alt={getLocalized(video, 'title', video.title)} className="aspect-video w-full bg-[var(--theme-hero)] object-cover" />
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-xl font-black text-[var(--theme-primary)]">{video.title}</h3>
+                    <h3 className="text-xl font-black text-[var(--theme-primary)]">{getLocalized(video, 'title', video.title)}</h3>
                     {item.completed && <span className="rounded-full bg-[var(--theme-accent)] px-3 py-1 text-xs font-black">Done</span>}
                   </div>
-                  <p className="mt-1 font-semibold text-[var(--theme-muted)]">{video.subtitle}</p>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--theme-text)]">{video.description}</p>
+                  <p className="mt-1 font-semibold text-[var(--theme-muted)]">{getLocalized(video, 'subtitle', video.subtitle)}</p>
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--theme-text)]">{getLocalized(video, 'description', video.description)}</p>
                   {!!publicNotes.length && <p className="mt-4 rounded-lg bg-[var(--theme-section)] p-3 text-sm font-bold text-[var(--theme-primary)]">{publicNotes.length} public note{publicNotes.length === 1 ? '' : 's'} available</p>}
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <a className="btn btn-primary" href={video.youtubeUrl} target="_blank" rel="noreferrer" title="Watch video" aria-label={`Watch ${video.title}`}><PlayCircle size={17} />Watch</a>
-                    <button className="btn btn-outline" title="Preview details" aria-label={`Preview details for ${video.title}`} onClick={() => openNotes(video)}><Eye size={17} /></button>
-                    <button className="btn btn-outline" disabled={busy} title="Mark as watched" aria-label={`Mark ${video.title} as watched`} onClick={() => saveProgress(video, { watched: true, watchedAt: serverTimestamp() }, 'Marked as watched.')}><CheckCircle2 size={17} /></button>
-                    <button className={`btn btn-outline ${item.saved ? 'bg-[color-mix(in_srgb,var(--theme-accent)_24%,var(--theme-surface))]' : ''}`} disabled={busy} title="Save video" aria-label={`Save ${video.title}`} onClick={() => saveProgress(video, { saved: !item.saved, savedAt: !item.saved ? serverTimestamp() : null }, item.saved ? 'Removed from saved videos.' : 'Video saved.')}><Bookmark size={17} /></button>
-                    <button className="btn btn-outline" disabled={busy} title="Open notes" aria-label={`Open notes for ${video.title}`} onClick={() => openNotes(video)}><NotebookPen size={17} /></button>
+                    <a className="btn btn-primary" href={video.youtubeUrl} target="_blank" rel="noreferrer" title={t('common.watch')} aria-label={`${t('common.watch')} ${getLocalized(video, 'title', video.title)}`}><PlayCircle size={17} />{t('common.watch')}</a>
+                    <button className="btn btn-outline" title={t('video.details')} aria-label={`${t('video.details')} ${getLocalized(video, 'title', video.title)}`} onClick={() => openNotes(video)}><Eye size={17} /></button>
+                    <button className="btn btn-outline" disabled={busy} title={t('common.watched')} aria-label={`${t('common.watched')} ${getLocalized(video, 'title', video.title)}`} onClick={() => saveProgress(video, { watched: true, watchedAt: serverTimestamp() }, t('common.watched'))}><CheckCircle2 size={17} /></button>
+                    <button className={`btn btn-outline ${item.saved ? 'bg-[color-mix(in_srgb,var(--theme-accent)_24%,var(--theme-surface))]' : ''}`} disabled={busy} title={t('video.saveVideo')} aria-label={`${t('common.save')} ${getLocalized(video, 'title', video.title)}`} onClick={() => saveProgress(video, { saved: !item.saved, savedAt: !item.saved ? serverTimestamp() : null }, item.saved ? t('common.saved') : t('common.save'))}><Bookmark size={17} /></button>
+                    <button className="btn btn-outline" disabled={busy} title={t('video.notes')} aria-label={`${t('video.notes')} ${getLocalized(video, 'title', video.title)}`} onClick={() => openNotes(video)}><NotebookPen size={17} /></button>
                   </div>
                 </div>
               </article>
             );
           })}
         </div>
-        {!cards.length && <p className="mt-8 rounded-lg bg-[var(--theme-section)] p-5 text-[var(--theme-text)]">Videos coming soon.</p>}
+        {!cards.length && <p className="mt-8 rounded-lg bg-[var(--theme-section)] p-5 text-[var(--theme-text)]">{t('video.noVideos')}</p>}
       </div>
       {noteFor && <NotesModal video={noteFor} publicNotes={videoNotes[noteFor.id] || []} user={user} note={note} setNote={setNote} onClose={() => setNoteFor(null)} onSave={savePrivateNote} />}
     </section>
@@ -173,25 +175,26 @@ export default function Videos() {
 }
 
 function NotesModal({ video, publicNotes, user, note, setNote, onClose, onSave }) {
+  const { getLocalized, t } = useLanguage();
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">
       <div className="surface max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg p-6">
         <div className="flex items-start justify-between gap-3">
-          <div><h3 className="text-2xl font-black text-[var(--theme-primary)]">{video.title}</h3><p className="text-sm text-[var(--theme-muted)]">Public notes and your private notebook</p></div>
+          <div><h3 className="text-2xl font-black text-[var(--theme-primary)]">{getLocalized(video, 'title', video.title)}</h3><p className="text-sm text-[var(--theme-muted)]">{t('video.publicNotes')} / {t('video.privateNotebook')}</p></div>
           <button className="btn btn-outline" onClick={onClose} aria-label="Close notes"><X size={18} /></button>
         </div>
         <section className="mt-5">
-          <h4 className="font-black text-[var(--theme-primary)]">Public notes</h4>
+          <h4 className="font-black text-[var(--theme-primary)]">{t('video.publicNotes')}</h4>
           <div className="mt-3 grid gap-3">
             {publicNotes.map((item) => <article className="rounded-lg bg-[var(--theme-section)] p-4" key={item.id}><b className="text-[var(--theme-primary)]">{item.title || 'Note'}</b><p className="mt-2 whitespace-pre-wrap leading-7 text-[var(--theme-muted)]">{item.content}</p></article>)}
-            {!publicNotes.length && <p className="rounded-lg bg-[var(--theme-section)] p-4 text-[var(--theme-muted)]">Notes coming soon.</p>}
+            {!publicNotes.length && <p className="rounded-lg bg-[var(--theme-section)] p-4 text-[var(--theme-muted)]">{t('video.notesSoon')}</p>}
           </div>
         </section>
         <section className="mt-5">
-          <h4 className="font-black text-[var(--theme-primary)]">Private notebook</h4>
-          {!user ? <p className="mt-3 rounded-lg bg-amber-50 p-4 font-semibold text-amber-800">Please log in to save private notes.</p> : <>
+          <h4 className="font-black text-[var(--theme-primary)]">{t('video.privateNotebook')}</h4>
+          {!user ? <p className="mt-3 rounded-lg bg-amber-50 p-4 font-semibold text-amber-800">{t('video.loginToSave')}</p> : <>
             <textarea className="input mt-3 min-h-40" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Write your private note..." />
-            <button className="btn btn-primary mt-3" onClick={onSave}>Save note</button>
+            <button className="btn btn-primary mt-3" onClick={onSave}>{t('common.save')}</button>
           </>}
         </section>
       </div>

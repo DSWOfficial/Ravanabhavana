@@ -1,6 +1,7 @@
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { AlertTriangle, Megaphone, PlayCircle, Video, Gift, CalendarClock } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
 import { normalizeBanner } from '../../lib/bannerThemes.js';
 import { toDate } from '../../utils/dateTime.js';
@@ -15,6 +16,7 @@ const icons = {
 
 export default function Banners() {
   const [banners, setBanners] = useState([]);
+  const { getLocalized } = useLanguage();
 
   useEffect(() => onSnapshot(query(collection(db, 'banners'), where('isActive', '==', true)), (snap) => {
     setBanners(snap.docs.map((item) => normalizeBanner(item.data(), item.id)));
@@ -53,9 +55,9 @@ export default function Banners() {
               <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide" style={{ backgroundColor: active.theme.accentColor, color: active.theme.backgroundColor }}>
                 <Icon size={15} />{active.topic}
               </span>
-              <h2 className="mt-4 text-3xl font-black leading-tight sm:text-4xl">{active.title}</h2>
-              <p className="mt-3 max-w-3xl whitespace-pre-wrap text-lg leading-8 opacity-90">{active.message}</p>
-              {active.buttonText && active.buttonUrl && <a className="btn mt-6 border-0 font-black" style={{ backgroundColor: active.theme.accentColor, color: active.theme.backgroundColor }} href={active.buttonUrl}>{active.buttonText}</a>}
+              <h2 className="mt-4 text-3xl font-black leading-tight sm:text-4xl">{getLocalized(active, 'title', active.title)}</h2>
+              <p className="mt-3 max-w-3xl whitespace-pre-wrap text-lg leading-8 opacity-90">{getLocalized(active, 'message', active.message)}</p>
+              {getLocalized(active, 'buttonText', active.buttonText) && active.buttonUrl && <a className="btn mt-6 border-0 font-black" style={{ backgroundColor: active.theme.accentColor, color: active.theme.backgroundColor }} href={active.buttonUrl}>{getLocalized(active, 'buttonText', active.buttonText)}</a>}
             </div>
             {active.imageUrl && <img src={active.imageUrl} alt="" className="h-full min-h-56 w-full object-cover" />}
           </div>
