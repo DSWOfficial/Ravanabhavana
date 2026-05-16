@@ -25,10 +25,10 @@ export default function Login() {
     }
   };
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f8f0df] p-4">
+    <main className="grid min-h-screen place-items-center bg-[var(--theme-section)] p-4">
       <form onSubmit={submit} className="surface w-full max-w-md rounded-lg p-7">
         <img src="/ravana-bhawana-logo.png" alt="රාවණ භවණ" className="mx-auto h-24 w-24 rounded-full object-cover" />
-        <h1 className="mt-5 text-center text-3xl font-black text-[#3a2115]">{mode === 'login' ? 'Login' : 'Create account'}</h1>
+        <h1 className="mt-5 text-center text-3xl font-black text-[var(--theme-primary)]">{mode === 'login' ? 'Login' : 'Create account'}</h1>
         {mode === 'signup' && <input className="input mt-5" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}
         <input className="input mt-3" type="email" required placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <input className="input mt-3" type="password" required minLength={6} placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />

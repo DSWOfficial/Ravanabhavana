@@ -15,12 +15,12 @@ export default function UserDashboard() {
   return (
     <>
       <Header />
-      <main className="section bg-[#f8f0df]">
+      <main className="section bg-[var(--theme-section)]">
         <div className="container-shell">
           <div className="surface rounded-lg p-7">
             <p className="eyebrow">User dashboard</p>
-            <h1 className="mt-2 text-4xl font-black text-[#3a2115]">ආයුබෝවන්, {user?.displayName || user?.email}</h1>
-            <p className="mt-2 text-[#6f4a31]">ඔබේ ප්‍රගතිය, සුරැකි වීඩියෝ, සටහන් සහ සැසි ඉතිහාසය මෙතැනින් බලන්න.</p>
+            <h1 className="mt-2 text-4xl font-black text-[var(--theme-primary)]">ආයුබෝවන්, {user?.displayName || user?.email}</h1>
+            <p className="mt-2 text-[var(--theme-muted)]">ඔබේ ප්‍රගතිය, සුරැකි වීඩියෝ, සටහන් සහ සැසි ඉතිහාසය මෙතැනින් බලන්න.</p>
           </div>
           <div className="mt-6 grid gap-6">
             <UserProgressOverview />
@@ -29,7 +29,7 @@ export default function UserDashboard() {
             <UserNotes />
             <div className="grid gap-6 lg:grid-cols-2"><UserSessionHistory /><UserDonationHistory /></div>
             <UserBadges />
-            <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black">Account settings</h2><p className="mt-2 text-[#6f4a31]">{user?.email}</p></section>
+            <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black text-[var(--theme-primary)]">Account settings</h2><p className="mt-2 text-[var(--theme-muted)]">{user?.email}</p></section>
           </div>
         </div>
       </main>

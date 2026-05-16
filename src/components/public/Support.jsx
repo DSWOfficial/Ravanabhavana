@@ -20,16 +20,16 @@ export default function Support() {
   };
   const bank = [['Organization name', settings.organizationName], ['Account holder name', settings.accountHolderName], ['Bank name', settings.bankName], ['Branch', settings.branch], ['Account number', settings.accountNumber]];
   return (
-    <section id="support" className="section bg-[#fffaf0]">
+    <section id="support" className="section bg-[var(--theme-surface)]">
       <div className="container-shell grid gap-8 lg:grid-cols-2">
         <div>
-          <p className="eyebrow">Support</p><h2 className="mt-3 text-4xl font-black text-[#3a2115]">පරිත්‍යාග සහාය</h2>
+          <p className="eyebrow">Support</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">පරිත්‍යාග සහාය</h2>
           <div className="mt-6 grid gap-3">
-            {bank.map(([label, value]) => <div key={label} className="surface flex items-center justify-between gap-3 rounded-lg p-4"><div><p className="text-sm font-bold text-[#6f4a31]">{label}</p><p className="font-black">{value || 'යාවත්කාලීන කිරීමට ඇත'}</p></div><button className="btn btn-outline" onClick={() => copyText(value)}><Copy size={17} /></button></div>)}
+            {bank.map(([label, value]) => <div key={label} className="surface flex items-center justify-between gap-3 rounded-lg p-4"><div><p className="text-sm font-bold text-[var(--theme-muted)]">{label}</p><p className="font-black text-[var(--theme-text)]">{value || 'යාවත්කාලීන කිරීමට ඇත'}</p></div><button className="btn btn-outline" onClick={() => copyText(value)}><Copy size={17} /></button></div>)}
           </div>
         </div>
         <form onSubmit={submit} className="surface rounded-lg p-6">
-          <Gift className="text-[#b88934]" />
+          <Gift className="text-[var(--theme-accent)]" />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {['name', 'country', 'area', 'amount', 'phone'].map((field) => <input key={field} required={field === 'name'} className="input" placeholder={field} value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />)}
             <select className="input" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })}>{(settings.purposes || []).map((p) => <option key={p}>{p}</option>)}</select>

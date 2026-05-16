@@ -24,19 +24,19 @@ function LiveCountdown({ targetDate }) {
   ];
 
   return (
-    <div className="live-countdown rounded-lg bg-[#fffaf0] p-4">
-      <p className="text-xs font-black uppercase text-[#6f4a31]">සජීවී ඉතිරි කාලය</p>
+    <div className="live-countdown rounded-lg bg-[var(--theme-surface)] p-4">
+      <p className="text-xs font-black uppercase text-[var(--theme-muted)]">සජීවී ඉතිරි කාලය</p>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {items.map(([label, value]) => (
-          <div className="countdown-tile rounded-lg border border-[#b88934]/25 bg-[#1a110d] px-3 py-4 text-center text-[#fffaf0]" key={label}>
-            <span className="countdown-number block text-3xl font-black leading-none text-[#e3c27f]">
+          <div className="countdown-tile rounded-lg border border-[color-mix(in_srgb,var(--theme-accent)_30%,transparent)] bg-[var(--theme-hero)] px-3 py-4 text-center text-[var(--theme-hero-text)]" key={label}>
+            <span className="countdown-number block text-3xl font-black leading-none text-[var(--theme-accent)]">
               {String(value).padStart(2, '0')}
             </span>
-            <span className="mt-2 block text-xs font-bold text-[#f8f0df]">{label}</span>
+            <span className="mt-2 block text-xs font-bold text-[var(--theme-hero-text)]">{label}</span>
           </div>
         ))}
       </div>
-      {parts.isPast && <p className="mt-3 text-sm font-bold text-[#6f4a31]">සැසි කාලය ආරම්භ වී ඇත.</p>}
+      {parts.isPast && <p className="mt-3 text-sm font-bold text-[var(--theme-muted)]">සැසි කාලය ආරම්භ වී ඇත.</p>}
     </div>
   );
 }
@@ -81,23 +81,23 @@ export default function WeeklySession() {
   };
 
   return (
-    <section id="session" className="section bg-[#f8f0df]">
+    <section id="session" className="section bg-[var(--theme-section)]">
       <div className="container-shell grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <p className="eyebrow">Weekly Session</p>
-          <h2 className="mt-3 text-4xl font-black text-[#3a2115]">සතිපතා Zoom සැසිය</h2>
-          <p className="mt-4 leading-7 text-[#6f4a31]">{schedule.description}</p>
+          <h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">සතිපතා Zoom සැසිය</h2>
+          <p className="mt-4 leading-7 text-[var(--theme-muted)]">{schedule.description}</p>
         </div>
 
         <div className="surface rounded-lg p-7">
-          <CalendarClock className="text-[#b88934]" size={32} />
-          <h3 className="mt-4 text-2xl font-black text-[#3a2115]">{active?.title || 'ඉදිරි සජීවී සැසිය'}</h3>
-          <p className="mt-2 text-[#6f4a31]">
+          <CalendarClock className="text-[var(--theme-accent)]" size={32} />
+          <h3 className="mt-4 text-2xl font-black text-[var(--theme-primary)]">{active?.title || 'ඉදිරි සජීවී සැසිය'}</h3>
+          <p className="mt-2 text-[var(--theme-muted)]">
             {active?.description || `${schedule.day} ${schedule.startTime} - ${schedule.endTime} Sri Lanka time`}
           </p>
 
           <div className="mt-5 grid gap-3">
-            <div className="rounded-lg bg-[#fffaf0] p-4 font-bold">{formatSinhalaDate(next)}</div>
+            <div className="rounded-lg bg-[var(--theme-surface)] p-4 font-bold text-[var(--theme-text)]">{formatSinhalaDate(next)}</div>
             <LiveCountdown targetDate={next} />
           </div>
 
@@ -106,7 +106,7 @@ export default function WeeklySession() {
               <Video size={18} />Join Zoom
             </button>
           ) : (
-            <p className="mt-6 font-semibold text-[#6f4a31]">Zoom link එක ඉක්මනින් පළ කරනු ඇත.</p>
+            <p className="mt-6 font-semibold text-[var(--theme-muted)]">Zoom link එක ඉක්මනින් පළ කරනු ඇත.</p>
           )}
         </div>
       </div>

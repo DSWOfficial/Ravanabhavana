@@ -1,8 +1,6 @@
-import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import { db } from '../firebase.js';
+import { ADMIN_EMAIL, useAuth } from '../context/AuthContext.jsx';
 
 export default function AdminRoute({ children }) {
   const { user, loading } = useAuth();
@@ -18,15 +16,10 @@ export default function AdminRoute({ children }) {
         setAdminState({ loading: false, isAdmin: false, error: '' });
         return;
       }
-      const adminPath = `admins/${user.email}`;
       console.log('[AdminRoute] logged-in email:', user.email);
-      console.log('[AdminRoute] admin document path:', adminPath);
       try {
-        const snap = await getDoc(doc(db, 'admins', user.email));
-        const adminData = snap.exists() ? snap.data() : null;
-        const isAdmin = snap.exists() && adminData?.role === 'admin';
-        console.log('[AdminRoute] admin doc exists:', snap.exists());
-        console.log('[AdminRoute] redirect decision:', isAdmin ? 'render:/admin/dashboard' : 'access-denied');
+        const isAdmin = user.email?.toLowerCase() === ADMIN_EMAIL;
+        console.log('[AdminRoute] redirect decision:', isAdmin ? 'render:/admin' : 'access-denied');
         if (mounted) setAdminState({ loading: false, isAdmin, error: '' });
       } catch (error) {
         console.error('[AdminRoute] Firestore admin check failed:', error);

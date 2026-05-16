@@ -4,16 +4,10 @@ import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
 
 const AuthContext = createContext(null);
+export const ADMIN_EMAIL = 'udarasampath@gmail.com';
 
 async function checkAdmin(email) {
-  if (!email) return false;
-  try {
-    const adminSnap = await getDoc(doc(db, 'admins', email));
-    return adminSnap.exists();
-  } catch (error) {
-    console.warn('Admin check skipped:', error.code || error.message);
-    return false;
-  }
+  return email?.toLowerCase() === ADMIN_EMAIL;
 }
 
 async function syncUserProfile(firebaseUser) {

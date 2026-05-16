@@ -55,11 +55,11 @@ export default function Videos() {
   const cards = useMemo(() => videos, [videos]);
 
   return (
-    <section id="videos" className="section bg-[#fffaf0]">
+    <section id="videos" className="section bg-[var(--theme-surface)]">
       <div className="container-shell">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div><p className="eyebrow">YouTube Library</p><h2 className="mt-3 text-4xl font-black text-[#3a2115]">වීඩියෝ පුස්තකාලය</h2></div>
-          {!user && <p className="rounded-lg bg-[#f8f0df] px-4 py-3 font-semibold text-[#6f4a31]">Login වුවහොත් ඔබේ ප්‍රගතිය save කරගත හැක.</p>}
+          <div><p className="eyebrow">YouTube Library</p><h2 className="mt-3 text-4xl font-black text-[var(--theme-primary)]">වීඩියෝ පුස්තකාලය</h2></div>
+          {!user && <p className="rounded-lg bg-[var(--theme-section)] px-4 py-3 font-semibold text-[var(--theme-muted)]">Login වුවහොත් ඔබේ ප්‍රගතිය save කරගත හැක.</p>}
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {message.text && (
@@ -71,22 +71,22 @@ export default function Videos() {
             const item = progress[video.id] || {};
             const busy = saving === `${user?.uid}_${video.id}`;
             return (
-              <article key={video.id} className="surface overflow-hidden rounded-lg">
-                <img src={video.thumbnailUrl || '/ravana-bhawana-logo.png'} alt={video.title} className="aspect-video w-full bg-[#2d1b12] object-cover" />
+              <article key={video.id} className="surface interactive-card overflow-hidden rounded-lg">
+                <img src={video.thumbnailUrl || '/ravana-bhawana-logo.png'} alt={video.title} className="aspect-video w-full bg-[var(--theme-hero)] object-cover" />
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-xl font-black text-[#3a2115]">{video.title}</h3>
-                    {item.completed && <span className="rounded-full bg-[#b88934] px-3 py-1 text-xs font-black">Done</span>}
+                    <h3 className="text-xl font-black text-[var(--theme-primary)]">{video.title}</h3>
+                    {item.completed && <span className="rounded-full bg-[var(--theme-accent)] px-3 py-1 text-xs font-black">Done</span>}
                   </div>
-                  <p className="mt-1 font-semibold text-[#6f4a31]">{video.subtitle}</p>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#4b3123]">{video.description}</p>
+                  <p className="mt-1 font-semibold text-[var(--theme-muted)]">{video.subtitle}</p>
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--theme-text)]">{video.description}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     <a className="btn btn-primary" href={video.youtubeUrl} target="_blank" rel="noreferrer"><PlayCircle size={17} />Watch</a>
                     {user ? (
                       <>
                         <button className="btn btn-outline" disabled={busy} title="Mark as watched" onClick={() => saveProgress(video, { watched: true, watchedAt: serverTimestamp() }, 'Watched ලෙස save කළා.')}><Eye size={17} /></button>
                         <button className="btn btn-outline" disabled={busy} title="Mark as completed" onClick={() => saveProgress(video, { completed: true, completedAt: serverTimestamp(), watched: true, watchedAt: item.watchedAt || serverTimestamp() }, 'Completed ලෙස save කළා.')}><CheckCircle2 size={17} /></button>
-                        <button className={`btn btn-outline ${item.saved ? 'bg-[#f2dfb8]' : ''}`} disabled={busy} title="Save video" onClick={() => saveProgress(video, { saved: !item.saved, savedAt: !item.saved ? serverTimestamp() : null }, item.saved ? 'Saved list එකෙන් ඉවත් කළා.' : 'Video එක save කළා.')}><Bookmark size={17} /></button>
+                        <button className={`btn btn-outline ${item.saved ? 'bg-[color-mix(in_srgb,var(--theme-accent)_24%,var(--theme-surface))]' : ''}`} disabled={busy} title="Save video" onClick={() => saveProgress(video, { saved: !item.saved, savedAt: !item.saved ? serverTimestamp() : null }, item.saved ? 'Saved list එකෙන් ඉවත් කළා.' : 'Video එක save කළා.')}><Bookmark size={17} /></button>
                         <button className="btn btn-outline" disabled={busy} title="Personal note" onClick={async () => {
                           try {
                             const snap = await getDoc(doc(db, 'userPrivateNotes', `${user.uid}_${video.id}`));
@@ -105,7 +105,7 @@ export default function Videos() {
             );
           })}
         </div>
-        {!cards.length && <p className="mt-8 rounded-lg bg-[#f8f0df] p-5">වීඩියෝ තවම එක් කර නැත.</p>}
+        {!cards.length && <p className="mt-8 rounded-lg bg-[var(--theme-section)] p-5 text-[var(--theme-text)]">වීඩියෝ තවම එක් කර නැත.</p>}
       </div>
       {noteFor && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4">

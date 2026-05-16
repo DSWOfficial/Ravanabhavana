@@ -7,5 +7,5 @@ export default function UserDonationHistory() {
 }
 
 export function History({ title, items, empty }) {
-  return <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black">{title}</h2><div className="mt-4 grid gap-2">{items.map((item) => <p className="rounded-lg bg-[#fffaf0] p-3" key={item}>{item}</p>)}</div>{!items.length && <p className="mt-3 text-[#6f4a31]">{empty}</p>}</section>;
+  return <section className="surface rounded-lg p-6"><h2 className="text-2xl font-black text-[var(--theme-primary)]">{title}</h2><div className="mt-4 grid gap-2">{items.map((item) => <p className="rounded-lg bg-[var(--theme-surface)] p-3" key={item}>{item}</p>)}</div>{!items.length && <p className="mt-3 text-[var(--theme-muted)]">{empty}</p>}</section>;
 }

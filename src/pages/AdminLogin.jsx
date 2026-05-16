@@ -19,10 +19,10 @@ export default function AdminLogin() {
     }
   };
   return (
-    <main className="grid min-h-screen place-items-center bg-[#1a110d] p-4">
+    <main className="grid min-h-screen place-items-center bg-[var(--theme-hero)] p-4">
       <form onSubmit={submit} className="surface w-full max-w-md rounded-lg p-7">
-        <ShieldCheck className="mx-auto text-[#b88934]" size={42} />
-        <h1 className="mt-5 text-center text-3xl font-black text-[#3a2115]">Admin Login</h1>
+        <ShieldCheck className="mx-auto text-[var(--theme-accent)]" size={42} />
+        <h1 className="mt-5 text-center text-3xl font-black text-[var(--theme-primary)]">Admin Login</h1>
         <input className="input mt-5" type="email" required placeholder="Admin email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <input className="input mt-3" type="password" required placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         {error && <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

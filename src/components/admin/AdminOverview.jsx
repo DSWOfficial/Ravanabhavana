@@ -34,10 +34,10 @@ export default function AdminOverview({ setActivePage }) {
   const actions = [['Add Video', 'videos'], ['Add Zoom Session', 'sessions'], ['Add Banner', 'banners'], ['Edit Site Settings', 'site']];
   return (
     <div className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([label, value, Icon]) => <article className="surface rounded-xl p-5" key={label}><Icon className="text-[#b88934]" /><p className="mt-3 text-sm font-bold text-[#6f4a31]">{label}</p><b className="text-3xl">{value}</b></article>)}</div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([label, value, Icon]) => <article className="surface interactive-card rounded-xl p-5" key={label}><Icon className="text-[var(--theme-accent)]" /><p className="mt-3 text-sm font-bold text-[var(--theme-muted)]">{label}</p><b className="text-3xl">{value}</b></article>)}</div>
       <AdminCard title="Currently Live On Website">
         <div className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-lg bg-[#fffaf0] p-4">{latest?.thumbnail_url && <img className="aspect-video w-full rounded-lg object-cover" src={latest.thumbnail_url} alt="" />}<b className="mt-3 block">Latest video: {latest?.title || 'None'}</b></div>
+          <div className="rounded-lg bg-[var(--theme-surface)] p-4">{latest?.thumbnail_url && <img className="aspect-video w-full rounded-lg object-cover" src={latest.thumbnail_url} alt="" />}<b className="mt-3 block">Latest video: {latest?.title || 'None'}</b></div>
           <div className="grid gap-3">
             <p><b>Active Zoom:</b> {activeSession ? `${activeSession.title} · ${activeSession.session_date} ${activeSession.start_time}` : 'None'}</p>
             <p><b>Active banners:</b> {calculateActiveBanners(data.banners)}</p>

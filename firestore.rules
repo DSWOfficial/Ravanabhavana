@@ -11,7 +11,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return signedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+        && request.auth.token.email == 'udarasampath@gmail.com';
     }
 
     function publicContent() {
@@ -84,6 +84,21 @@ service cloud.firestore {
         || request.resource.data.isGuest == true;
       allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
       allow update, delete: if isAdmin();
+    }
+
+    match /pages/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /navigation/{id} {
+      allow read: if publicContent();
+      allow write: if isAdmin();
+    }
+
+    match /media/{id} {
+      allow read: if publicContent();
+      allow write: if isAdmin();
     }
   }
 }

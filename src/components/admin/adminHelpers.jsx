@@ -11,7 +11,7 @@ export function AdminCard({ children, title, actions }) {
   return (
     <section className="surface rounded-xl p-5 sm:p-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <h2 className="text-2xl font-black text-[#3a2115]">{title}</h2>
+        <h2 className="text-2xl font-black text-[var(--theme-primary)]">{title}</h2>
         {actions}
       </div>
       <div className="mt-5">{children}</div>
