@@ -12,9 +12,11 @@ export default function Videos() {
   const [progress, setProgress] = useState({});
   const [noteFor, setNoteFor] = useState(null);
   const [note, setNote] = useState('');
+  const [saving, setSaving] = useState('');
+  const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => onSnapshot(query(collection(db, 'videos'), where('isActive', '==', true)), (snap) => {
-    setVideos(sortVideosByOrder(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
+    setVideos(sortVideosByOrder(snap.docs.map((d) => normalizeVideo({ id: d.id, ...d.data() }))));
   }), []);
 
   useEffect(() => {
@@ -24,16 +26,30 @@ export default function Videos() {
     });
   }, [user]);
 
-  const saveProgress = async (video, patch) => {
+  const showMessage = (type, text) => {
+    setMessage({ type, text });
+    window.setTimeout(() => setMessage({ type: '', text: '' }), 3200);
+  };
+
+  const saveProgress = async (video, patch, successText) => {
     if (!user) return;
     const id = `${user.uid}_${video.id}`;
-    await setDoc(doc(db, 'userVideoProgress', id), {
-      userId: user.uid,
-      videoDocId: video.id,
-      videoId: video.videoId,
-      updatedAt: serverTimestamp(),
-      ...patch,
-    }, { merge: true });
+    setSaving(id);
+    try {
+      await setDoc(doc(db, 'userVideoProgress', id), {
+        userId: user.uid,
+        videoDocId: video.id,
+        videoId: video.videoId || video.id,
+        updatedAt: serverTimestamp(),
+        ...patch,
+      }, { merge: true });
+      showMessage('success', successText);
+    } catch (error) {
+      console.error('[Videos] progress save failed:', error);
+      showMessage('error', error.message);
+    } finally {
+      setSaving('');
+    }
   };
 
   const cards = useMemo(() => videos, [videos]);
@@ -46,11 +62,17 @@ export default function Videos() {
           {!user && <p className="rounded-lg bg-[#f8f0df] px-4 py-3 font-semibold text-[#6f4a31]">Login වුවහොත් ඔබේ ප්‍රගතිය save කරගත හැක.</p>}
         </div>
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {message.text && (
+            <div className={`md:col-span-2 lg:col-span-3 rounded-lg p-4 font-bold ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-800'}`}>
+              {message.text}
+            </div>
+          )}
           {cards.map((video) => {
             const item = progress[video.id] || {};
+            const busy = saving === `${user?.uid}_${video.id}`;
             return (
               <article key={video.id} className="surface overflow-hidden rounded-lg">
-                <img src={video.thumbnailUrl} alt={video.title} className="aspect-video w-full bg-[#2d1b12] object-cover" />
+                <img src={video.thumbnailUrl || '/ravana-bhawana-logo.png'} alt={video.title} className="aspect-video w-full bg-[#2d1b12] object-cover" />
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="text-xl font-black text-[#3a2115]">{video.title}</h3>
@@ -62,10 +84,19 @@ export default function Videos() {
                     <a className="btn btn-primary" href={video.youtubeUrl} target="_blank" rel="noreferrer"><PlayCircle size={17} />Watch</a>
                     {user ? (
                       <>
-                        <button className="btn btn-outline" onClick={() => saveProgress(video, { watched: true, watchedAt: serverTimestamp() })}><Eye size={17} /></button>
-                        <button className="btn btn-outline" onClick={() => saveProgress(video, { completed: true, completedAt: serverTimestamp(), watched: true })}><CheckCircle2 size={17} /></button>
-                        <button className="btn btn-outline" onClick={() => saveProgress(video, { saved: !item.saved, savedAt: serverTimestamp() })}><Bookmark size={17} /></button>
-                        <button className="btn btn-outline" onClick={async () => { const snap = await getDoc(doc(db, 'userPrivateNotes', `${user.uid}_${video.id}`)); setNoteFor(video); setNote(snap.data()?.note || ''); }}><NotebookPen size={17} /></button>
+                        <button className="btn btn-outline" disabled={busy} title="Mark as watched" onClick={() => saveProgress(video, { watched: true, watchedAt: serverTimestamp() }, 'Watched ලෙස save කළා.')}><Eye size={17} /></button>
+                        <button className="btn btn-outline" disabled={busy} title="Mark as completed" onClick={() => saveProgress(video, { completed: true, completedAt: serverTimestamp(), watched: true, watchedAt: item.watchedAt || serverTimestamp() }, 'Completed ලෙස save කළා.')}><CheckCircle2 size={17} /></button>
+                        <button className={`btn btn-outline ${item.saved ? 'bg-[#f2dfb8]' : ''}`} disabled={busy} title="Save video" onClick={() => saveProgress(video, { saved: !item.saved, savedAt: !item.saved ? serverTimestamp() : null }, item.saved ? 'Saved list එකෙන් ඉවත් කළා.' : 'Video එක save කළා.')}><Bookmark size={17} /></button>
+                        <button className="btn btn-outline" disabled={busy} title="Personal note" onClick={async () => {
+                          try {
+                            const snap = await getDoc(doc(db, 'userPrivateNotes', `${user.uid}_${video.id}`));
+                            setNoteFor(video);
+                            setNote(snap.data()?.note || '');
+                          } catch (error) {
+                            console.error('[Videos] note load failed:', error);
+                            showMessage('error', error.message);
+                          }
+                        }}><NotebookPen size={17} /></button>
                       </>
                     ) : <Link className="btn btn-outline" to="/login"><LogIn size={17} />Login to track progress</Link>}
                   </div>
@@ -83,11 +114,42 @@ export default function Videos() {
             <textarea className="input mt-4 min-h-36" value={note} onChange={(e) => setNote(e.target.value)} />
             <div className="mt-4 flex justify-end gap-2">
               <button className="btn btn-outline" onClick={() => setNoteFor(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={async () => { await setDoc(doc(db, 'userPrivateNotes', `${user.uid}_${noteFor.id}`), { userId: user.uid, videoDocId: noteFor.id, videoId: noteFor.videoId, note, updatedAt: serverTimestamp() }, { merge: true }); setNoteFor(null); }}>Save note</button>
+              <button className="btn btn-primary" onClick={async () => {
+                try {
+                  await setDoc(doc(db, 'userPrivateNotes', `${user.uid}_${noteFor.id}`), {
+                    userId: user.uid,
+                    videoDocId: noteFor.id,
+                    videoId: noteFor.videoId || noteFor.id,
+                    note,
+                    updatedAt: serverTimestamp(),
+                  }, { merge: true });
+                  setNoteFor(null);
+                  showMessage('success', 'Personal note එක save කළා.');
+                } catch (error) {
+                  console.error('[Videos] note save failed:', error);
+                  showMessage('error', error.message);
+                }
+              }}>Save note</button>
             </div>
           </div>
         </div>
       )}
     </section>
   );
+}
+
+function normalizeVideo(video) {
+  return {
+    ...video,
+    title: video.title || '',
+    subtitle: video.subtitle || '',
+    description: video.description || '',
+    youtubeUrl: video.youtubeUrl || video.youtube_url || '',
+    videoId: video.videoId || video.video_id || '',
+    thumbnailUrl: video.thumbnailUrl || video.thumbnail_url || '',
+    videoNumber: video.videoNumber || video.video_number || '',
+    isLatest: video.isLatest ?? video.is_latest ?? false,
+    isActive: video.isActive ?? video.is_active ?? true,
+    order: video.order ?? video.display_order ?? 999,
+  };
 }

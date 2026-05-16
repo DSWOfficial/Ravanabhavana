@@ -18,10 +18,10 @@ export default function Header() {
           <img src="/ravana-bhawana-logo.png" alt="රාවණ භවණ" className="h-12 w-12 rounded-full object-cover" />
           <span className="text-xl">රාවණ භවණ</span>
         </a>
-        <nav className="hidden items-center gap-5 text-sm font-semibold text-[#4b3123] lg:flex">
+        <nav className="hidden items-center gap-3 text-xs font-semibold text-[#4b3123] min-[900px]:flex xl:gap-5 xl:text-sm">
           {links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
         </nav>
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-2 min-[900px]:flex">
           {user ? (
             <>
               <Link className="btn btn-outline" to="/dashboard"><UserRound size={18} />Dashboard</Link>
@@ -34,10 +34,10 @@ export default function Header() {
             </>
           )}
         </div>
-        <button className="btn btn-outline lg:hidden" onClick={() => setOpen(!open)} aria-label="Menu"><Menu size={20} /></button>
+        <button className="btn btn-outline min-[900px]:hidden" onClick={() => setOpen(!open)} aria-label="Menu"><Menu size={20} /></button>
       </div>
       {open && (
-        <div className="container-shell grid gap-3 pb-5 lg:hidden">
+        <div className="container-shell grid gap-3 pb-5 min-[900px]:hidden">
           {links.map(([label, href]) => <a key={href} className="py-1 font-semibold" href={href} onClick={() => setOpen(false)}>{label}</a>)}
           {user ? <Link className="btn btn-primary" to="/dashboard">Dashboard</Link> : <Link className="btn btn-primary" to="/login">Login</Link>}
         </div>

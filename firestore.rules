@@ -62,7 +62,7 @@ service cloud.firestore {
 
     match /userVideoProgress/{id} {
       allow create, update: if isOwner(request.resource.data.userId)
-        && request.resource.data.note == null;
+        && !request.resource.data.keys().hasAny(['note']);
       allow read: if isOwner(resource.data.userId) || isAdmin();
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
