@@ -4,6 +4,7 @@ import Footer from '../components/public/Footer.jsx';
 import Header from '../components/public/Header.jsx';
 import PageRenderer from '../components/public/PageRenderer.jsx';
 import { getPublishedPageBySlug } from '../lib/cms.js';
+import HomePage from './HomePage.jsx';
 
 function setMeta(selector, attrs) {
   let tag = document.head.querySelector(selector);
@@ -44,7 +45,8 @@ export default function DynamicPage({ slug: forcedSlug }) {
       <Header />
       <main>
         {state.loading && <section className="section bg-[var(--theme-section)]"><div className="container-shell">Loading...</div></section>}
-        {!state.loading && !state.page && <section className="section bg-[var(--theme-section)]"><div className="container-shell"><h1 className="text-4xl font-black text-[var(--theme-primary)]">Page not found</h1></div></section>}
+        {!state.loading && !state.page && slug === 'home' && <HomePage />}
+        {!state.loading && !state.page && slug !== 'home' && <section className="section bg-[var(--theme-section)]"><div className="container-shell"><h1 className="text-4xl font-black text-[var(--theme-primary)]">Page not found</h1></div></section>}
         <PageRenderer page={state.page} />
       </main>
       <Footer />

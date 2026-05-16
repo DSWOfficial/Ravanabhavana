@@ -3,6 +3,7 @@ import SiteTheme from './components/public/SiteTheme.jsx';
 import Login from './pages/Login.jsx';
 import UserDashboard from './pages/UserDashboard.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminCmsDashboard from './pages/admin/AdminCmsDashboard.jsx';
 import CmsPagesList from './pages/admin/CmsPagesList.jsx';
 import CmsPageNew from './pages/admin/CmsPageNew.jsx';
@@ -22,8 +23,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminRoute><AdminCmsDashboard /></AdminRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/cms" element={<AdminRoute><AdminCmsDashboard /></AdminRoute>} />
         <Route path="/admin/pages" element={<AdminRoute><CmsPagesList /></AdminRoute>} />
         <Route path="/admin/pages/new" element={<AdminRoute><CmsPageNew /></AdminRoute>} />
         <Route path="/admin/pages/:id/edit" element={<AdminRoute><CmsPageEdit /></AdminRoute>} />

@@ -1,18 +1,31 @@
-import { BarChart3, FileText, Home, Images, Link as LinkIcon, LogOut, Menu, Search, X } from 'lucide-react';
+import { Banknote, BarChart3, Bell, CalendarClock, Eye, FileText, Gift, Home, Images, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, Users, Video, X } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase.js';
 
-const items = [
-  ['/admin', 'Dashboard', BarChart3],
+const managerItems = [
+  ['overview', 'Dashboard', BarChart3],
+  ['videos', 'Videos', PlaySquare],
+  ['sessions', 'Zoom Sessions', Video],
+  ['schedule', 'Weekly Schedule', CalendarClock],
+  ['banners', 'Banners / Notices', Bell],
+  ['users', 'Users', Users],
+  ['donations', 'Donations', Gift],
+  ['site', 'Text, Links & Colors', Palette],
+  ['donationSettings', 'Account Details', Banknote],
+  ['preview', 'Public Preview', Eye],
+];
+
+const cmsItems = [
+  ['/admin/cms', 'CMS Dashboard', BarChart3],
   ['/admin/pages', 'Pages', FileText],
+  ['/admin/pages/new', 'Create Page', FileText],
   ['/admin/media', 'Media', Images],
   ['/admin/navigation', 'Navigation', LinkIcon],
-  ['/admin/pages/new', 'Create Page', FileText],
   ['/admin/pages/home/edit', 'SEO Settings', Search],
 ];
 
-export default function AdminSidebar({ open, setOpen }) {
+export default function AdminSidebar({ open, setOpen, activePage, setActivePage }) {
   const navigate = useNavigate();
   const logout = async () => {
     await signOut(auth);
@@ -28,8 +41,24 @@ export default function AdminSidebar({ open, setOpen }) {
         <button className="lg:hidden" onClick={() => setOpen(false)}><X /></button>
       </div>
       <nav className="mt-8 grid gap-2">
-        {items.map(([to, label, Icon]) => (
-          <NavLink key={to} to={to} end={to === '/admin'} onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-lg px-4 py-3 text-left font-bold transition ${isActive ? 'bg-[var(--theme-accent)] text-[var(--theme-hero)]' : 'hover:bg-white/10'}`}>
+        {setActivePage && (
+          <>
+            <p className="px-4 pt-2 text-xs font-black uppercase tracking-wide text-[#d6ad61]">Manage Website</p>
+            {managerItems.map(([page, label, Icon]) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => { setActivePage(page); setOpen(false); navigate('/admin'); }}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-bold transition ${activePage === page ? 'bg-[var(--theme-accent)] text-[var(--theme-hero)]' : 'hover:bg-white/10'}`}
+              >
+                <Icon size={18} />{label}
+              </button>
+            ))}
+          </>
+        )}
+        <p className="px-4 pt-4 text-xs font-black uppercase tracking-wide text-[#d6ad61]">Pages & HTML</p>
+        {cmsItems.map(([to, label, Icon]) => (
+          <NavLink key={to} to={to} end={to === '/admin/cms'} onClick={() => setOpen(false)} className={({ isActive }) => `flex items-center gap-3 rounded-lg px-4 py-3 text-left font-bold transition ${isActive ? 'bg-[var(--theme-accent)] text-[var(--theme-hero)]' : 'hover:bg-white/10'}`}>
             <Icon size={18} />{label}
           </NavLink>
         ))}

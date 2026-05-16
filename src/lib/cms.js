@@ -16,6 +16,7 @@ import { db } from '../firebase.js';
 
 export const sectionTypes = [
   'hero',
+  'html',
   'text',
   'textImage',
   'gallery',
@@ -49,6 +50,7 @@ export function createSection(type = 'text') {
   const base = { id: crypto.randomUUID(), type };
   const presets = {
     hero: { eyebrow: '', title: 'New hero', subtitle: '', body: '', image: '', primaryLabel: '', primaryUrl: '', secondaryLabel: '', secondaryUrl: '' },
+    html: { title: 'HTML section', html: '<section class="section bg-[var(--theme-surface)]"><div class="container-shell"><h2>Your HTML</h2><p>Edit this section with custom HTML.</p></div></section>' },
     text: { title: 'Text section', body: '' },
     textImage: { title: 'Text and image', body: '', image: '', imageAlt: '', imagePosition: 'right' },
     gallery: { title: 'Gallery', images: [] },

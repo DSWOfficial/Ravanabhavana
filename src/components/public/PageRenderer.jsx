@@ -10,6 +10,16 @@ function LinkButton({ label, url, variant = 'primary' }) {
 }
 
 function renderSection(section, index) {
+  if (section.type === 'html') {
+    return (
+      <div
+        key={section.id || index}
+        className="cms-html-section"
+        dangerouslySetInnerHTML={{ __html: section.html || '' }}
+      />
+    );
+  }
+
   if (section.type === 'hero') {
     return (
       <section key={section.id || index} className="relative overflow-hidden bg-[var(--theme-hero)] text-[var(--theme-hero-text)]">
