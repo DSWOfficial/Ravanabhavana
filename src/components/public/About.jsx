@@ -3,12 +3,21 @@ import { Award, HeartHandshake } from 'lucide-react';
 export default function About() {
   return (
     <section id="about" className="section bg-[#fffaf0]">
-      <div className="container-shell grid gap-8 lg:grid-cols-[0.75fr_1.25fr]">
-        <div>
+      <div className="container-shell grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+        <div className="flex flex-col items-start">
           <p className="eyebrow">මා ගැන</p>
           <h2 className="mt-3 text-4xl font-black text-[#3a2115]">උදාර සම්පත්</h2>
           <p className="mt-1 text-xl font-bold text-[#6f4a31]">S. Udara Sampath Rodrigo</p>
+
+          <div className="mt-7 w-full max-w-sm overflow-hidden rounded-xl border border-[#b88934]/30 bg-[#1a110d] p-2 shadow-2xl">
+            <img
+              src="/profilepic.png"
+              alt="S. Udara Sampath Rodrigo"
+              className="aspect-[4/5] w-full rounded-lg object-cover"
+            />
+          </div>
         </div>
+
         <div className="surface rounded-lg p-7">
           <div className="flex flex-wrap gap-3">
             <span className="btn btn-outline"><HeartHandshake size={18} />වෘත්තීය මනෝ උපදේශක</span>
