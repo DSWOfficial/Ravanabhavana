@@ -1,4 +1,4 @@
-import { Banknote, BarChart3, Bell, CalendarClock, Eye, FileText, Gift, HeartHandshake, Home, Images, Layers3, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, ShieldAlert, Users, Video, X } from 'lucide-react';
+import { Banknote, BarChart3, Bell, CalendarClock, Download, Eye, FileText, Gift, HeartHandshake, Home, Images, Layers3, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, Settings2, ShieldAlert, Users, Video, X } from 'lucide-react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase.js';
@@ -20,6 +20,8 @@ const managerItems = [
 const cmsItems = [
   ['/admin/cms', 'CMS Dashboard', BarChart3],
   ['/admin/homepage', 'Homepage Editor', Home],
+  ['/admin/homepage-sections', 'Homepage Sections', Settings2],
+  ['/admin/announcement-bar', 'Announcement Bar', Bell],
   ['/admin/banners', 'Banners', Bell],
   ['/admin/guidance', 'Guidance', HeartHandshake],
   ['/admin/weekly-sessions', 'Weekly Sessions', CalendarClock],
@@ -31,6 +33,7 @@ const cmsItems = [
   ['/admin/media', 'Media', Images],
   ['/admin/navigation', 'Navigation', LinkIcon],
   ['/admin/seo', 'SEO Settings', Search],
+  ['/admin/backup-export', 'Backup / Export', Download],
 ];
 
 export default function AdminSidebar({ open, setOpen, collapsed = false, activePage, setActivePage }) {
@@ -40,7 +43,7 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, activeP
     navigate('/admin/login');
   };
   const content = (
-    <div className="flex h-full flex-col bg-[#24150f] p-5 text-[#fffaf0]">
+    <div className="admin-sidebar-inner flex min-h-full flex-col bg-[#24150f] p-5 text-[#fffaf0]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/ravana-bhawana-logo.png" alt="" className="h-12 w-12 rounded-xl object-cover" />
@@ -74,14 +77,14 @@ export default function AdminSidebar({ open, setOpen, collapsed = false, activeP
         ))}
         <Link className="flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" to="/"><Home size={18} />Public Preview</Link>
       </nav>
-      <button className="mt-auto flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" onClick={logout}><LogOut size={18} />Logout</button>
+      <button className="mt-6 flex items-center gap-3 rounded-lg px-4 py-3 font-bold hover:bg-white/10" onClick={logout}><LogOut size={18} />Logout</button>
     </div>
   );
   return (
     <>
       <button className="fixed left-4 top-4 z-40 rounded-lg bg-[#24150f] p-3 text-white lg:hidden" onClick={() => setOpen(true)}><Menu /></button>
-      <aside className={`fixed inset-y-0 left-0 z-50 hidden w-72 transition-transform lg:block ${collapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}>{content}</aside>
-      {open && <aside className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} /><div className="relative h-full w-72">{content}</div></aside>}
+      <aside className={`admin-sidebar hidden transition-transform lg:block ${collapsed ? 'lg:-translate-x-full' : 'lg:translate-x-0'}`}>{content}</aside>
+      {open && <aside className="fixed inset-0 z-50 lg:hidden"><div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} /><div className="admin-sidebar admin-sidebar-mobile open relative h-full w-72">{content}</div></aside>}
     </>
   );
 }

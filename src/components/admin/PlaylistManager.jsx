@@ -1,27 +1,24 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import { Edit3, Eye, Plus, Trash2 } from 'lucide-react';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { Edit3, Eye, GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { db } from '../../firebase.js';
 import { buildPlaylistOptions, cardStyles, defaultPlaylistTheme, getPlaylistRoute, getPlaylistStyle, normalizePlaylist, playlistEffects, playlistTopics, slugify, topicThemes } from '../../lib/videoLibrary.js';
-import { AdminCard, confirmDelete, emptyToast, Toast } from './adminHelpers.jsx';
+import { AdminCard, emptyToast, Toast } from './adminHelpers.jsx';
 
 const empty = {
   title: '',
+  sinhalaTitle: '',
   title_si: '',
   title_en: '',
   slug: '',
   description: '',
-  description_si: '',
-  description_en: '',
   coverImageUrl: '',
   parentPlaylistId: '',
   topic: 'Spiritual Guidance',
-  topic_si: '',
-  topic_en: '',
   isPublished: true,
-  order: 1,
+  courseMode: false,
   learningPathEnabled: false,
   learningPathOrder: 999,
   learningPathLabel: '',
@@ -39,8 +36,11 @@ export default function PlaylistManager() {
   const [editingId, setEditingId] = useState('');
   const [toast, setToast] = useState(emptyToast);
   const [loading, setLoading] = useState(true);
+  const [draggedId, setDraggedId] = useState('');
+
   const playlistOptions = useMemo(() => buildPlaylistOptions(playlists), [playlists]);
   const playlistMap = useMemo(() => Object.fromEntries(playlists.map((playlist) => [playlist.id, playlist])), [playlists]);
+  const preview = useMemo(() => normalizePlaylist({ ...form, title_si: form.sinhalaTitle || form.title_si }, editingId || 'preview'), [form, editingId]);
 
   const load = async () => {
     setLoading(true);
@@ -57,8 +57,6 @@ export default function PlaylistManager() {
 
   useEffect(() => { load(); }, []);
 
-  const preview = useMemo(() => normalizePlaylist(form, editingId || 'preview'), [form, editingId]);
-
   const reset = () => {
     setEditingId('');
     setForm(empty);
@@ -68,6 +66,7 @@ export default function PlaylistManager() {
     setForm((current) => {
       const next = { ...current, [field]: value };
       if (field === 'title' && !editingId) next.slug = slugify(value);
+      if (field === 'sinhalaTitle') next.title_si = value;
       return next;
     });
   };
@@ -82,26 +81,32 @@ export default function PlaylistManager() {
 
   const save = async (event) => {
     event.preventDefault();
+    const parent = form.parentPlaylistId ? playlistMap[form.parentPlaylistId] : null;
+    const siblingCount = playlists.filter((item) => (item.parentPlaylistId || '') === (form.parentPlaylistId || '') && item.id !== editingId).length;
+    const title = form.title.trim();
+    const sinhalaTitle = (form.sinhalaTitle || form.title_si || '').trim();
     const payload = {
       ...form,
-      title: form.title_si || form.title,
-      description: form.description_si || form.description,
-      topic: form.topic_si || form.topic,
+      title,
+      sinhalaTitle,
+      title_si: sinhalaTitle,
+      description: form.description.trim(),
+      slug: form.slug || slugify(title || sinhalaTitle),
       parentPlaylistId: form.parentPlaylistId || null,
-      slug: form.slug || slugify(form.title_en || form.title_si || form.title),
-      order: Number(form.order || 999),
-      learningPathOrder: Number(form.learningPathOrder || 999),
+      parentPlaylistSlug: parent?.slug || null,
+      depth: parent ? (parent.depth || 0) + 1 : 0,
+      path: parent ? [...(parent.path || []), parent.id] : [],
+      pathSlugs: parent ? [...(parent.pathSlugs || []), parent.slug] : [],
+      isPublished: Boolean(form.isPublished),
+      published: Boolean(form.isPublished),
+      courseMode: Boolean(form.courseMode),
+      order: Number(form.order ?? siblingCount + 1),
       updatedAt: serverTimestamp(),
       createdBy: user?.email || '',
     };
-    const parent = form.parentPlaylistId ? playlistMap[form.parentPlaylistId] : null;
-    payload.parentPlaylistSlug = parent?.slug || null;
-    payload.depth = parent ? (parent.depth || 0) + 1 : 0;
-    payload.path = parent ? [...(parent.path || []), parent.id] : [];
-    payload.pathSlugs = parent ? [...(parent.pathSlugs || []), parent.slug] : [];
     try {
       if (editingId) await updateDoc(doc(db, 'playlists', editingId), payload);
-      else await addDoc(collection(db, 'playlists'), { ...payload, createdAt: serverTimestamp() });
+      else await addDoc(collection(db, 'playlists'), { ...payload, order: siblingCount + 1, createdAt: serverTimestamp() });
       setToast({ type: 'success', message: 'Playlist saved' });
       reset();
       await load();
@@ -113,7 +118,16 @@ export default function PlaylistManager() {
 
   const edit = (playlist) => {
     setEditingId(playlist.id);
-    setForm({ ...empty, ...playlist, parentPlaylistId: playlist.parentPlaylistId || '', theme: { ...defaultPlaylistTheme, ...playlist.theme } });
+    setForm({
+      ...empty,
+      ...playlist,
+      sinhalaTitle: playlist.sinhalaTitle || playlist.title_si || '',
+      parentPlaylistId: playlist.parentPlaylistId || '',
+      isPublished: playlist.isPublished,
+      courseMode: Boolean(playlist.courseMode),
+      theme: { ...defaultPlaylistTheme, ...playlist.theme },
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const addSubPlaylist = (playlist) => {
@@ -123,12 +137,22 @@ export default function PlaylistManager() {
       parentPlaylistId: playlist.id,
       topic: playlist.topic,
       theme: { ...defaultPlaylistTheme, ...playlist.theme },
-      order: playlist.order + 1,
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggle = async (playlist) => {
+    try {
+      await updateDoc(doc(db, 'playlists', playlist.id), { isPublished: !playlist.isPublished, published: !playlist.isPublished, updatedAt: serverTimestamp() });
+      await load();
+    } catch (error) {
+      console.error('[PlaylistManager] publish toggle failed:', error);
+      setToast({ type: 'error', message: `Could not update playlist. ${adminError(error, `playlists/${playlist.id}`)}` });
+    }
   };
 
   const remove = async (playlist) => {
-    const mode = window.prompt(`This playlist may contain sub-playlists or videos.\n\nType one option:\nEMPTY = Delete only if empty\nMOVE = Move videos/sub-playlists to Uncategorized\nDELETE = Delete playlist and sub-playlists\nCANCEL = Cancel`, 'EMPTY');
+    const mode = window.prompt('This playlist may contain sub-playlists or videos.\n\nType EMPTY to delete only if empty, MOVE to move children/videos to Uncategorized, DELETE to remove playlist folders, or CANCEL.', 'EMPTY');
     if (!mode || mode.toUpperCase() === 'CANCEL') return;
     try {
       const normalizedMode = mode.toUpperCase();
@@ -143,8 +167,8 @@ export default function PlaylistManager() {
         await Promise.all([
           ...descendants.map((child) => updateDoc(doc(db, 'playlists', child.id), { parentPlaylistId: null, parentPlaylistSlug: null, depth: 0, path: [], pathSlugs: [], updatedAt: serverTimestamp() })),
           ...videoDocs.map((item) => updateDoc(item.ref, { playlistId: '', playlistSlug: '', playlistTitle: 'Uncategorized', parentPlaylistId: null, playlistPath: [], playlistPathSlugs: [], updatedAt: serverTimestamp() })),
+          deleteDoc(doc(db, 'playlists', playlist.id)),
         ]);
-        await deleteDoc(doc(db, 'playlists', playlist.id));
       } else if (normalizedMode === 'DELETE') {
         await Promise.all([
           ...videoDocs.map((item) => updateDoc(item.ref, { playlistId: '', playlistSlug: '', playlistTitle: 'Uncategorized', parentPlaylistId: null, playlistPath: [], playlistPathSlugs: [], updatedAt: serverTimestamp() })),
@@ -164,70 +188,101 @@ export default function PlaylistManager() {
     }
   };
 
-  const toggle = async (playlist) => {
+  const updateSiblingOrder = async (sourceId, targetId) => {
+    if (!sourceId || sourceId === targetId) return;
+    const source = playlists.find((item) => item.id === sourceId);
+    const target = playlists.find((item) => item.id === targetId);
+    if (!source || !target || (source.parentPlaylistId || '') !== (target.parentPlaylistId || '')) {
+      setToast({ type: 'error', message: 'Only playlists under the same parent can be reordered.' });
+      return;
+    }
+    const siblings = playlists.filter((item) => (item.parentPlaylistId || '') === (source.parentPlaylistId || '')).sort((a, b) => a.order - b.order);
+    const reordered = [...siblings];
+    const from = reordered.findIndex((item) => item.id === sourceId);
+    const to = reordered.findIndex((item) => item.id === targetId);
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
     try {
-      await updateDoc(doc(db, 'playlists', playlist.id), { isPublished: !playlist.isPublished, updatedAt: serverTimestamp() });
+      const batch = writeBatch(db);
+      reordered.forEach((item, index) => batch.update(doc(db, 'playlists', item.id), { order: index + 1, updatedAt: serverTimestamp() }));
+      await batch.commit();
+      setToast({ type: 'success', message: 'Order updated successfully.' });
       await load();
     } catch (error) {
-      console.error('[PlaylistManager] publish toggle failed:', error);
-      setToast({ type: 'error', message: `Could not update playlist. ${adminError(error, `playlists/${playlist.id}`)}` });
+      console.error('[PlaylistManager] order update failed:', error);
+      setToast({ type: 'error', message: adminError(error, 'playlists order') });
+    } finally {
+      setDraggedId('');
     }
   };
 
   return (
-    <AdminCard title="Playlist CMS" actions={<button className="btn btn-outline" type="button" onClick={reset}><Plus size={18} />New Main Playlist</button>}>
+    <AdminCard title="Playlist Manager" actions={<button className="btn btn-primary" type="button" onClick={reset}><Plus size={18} />Create Playlist</button>}>
       <Toast toast={toast} />
-      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <form onSubmit={save} className="grid gap-3 md:grid-cols-2">
-          <input className="input" required placeholder="Title" value={form.title} onChange={(event) => patch('title', event.target.value)} />
-          <input className="input" placeholder="Sinhala Title" value={form.title_si || ''} onChange={(event) => patch('title_si', event.target.value)} />
-          <input className="input" placeholder="English Title" value={form.title_en || ''} onChange={(event) => patch('title_en', event.target.value)} />
-          <input className="input" placeholder="Slug" value={form.slug} onChange={(event) => patch('slug', slugify(event.target.value))} />
-          <textarea className="input min-h-28 md:col-span-2" placeholder="Description" value={form.description} onChange={(event) => patch('description', event.target.value)} />
-          <textarea className="input min-h-24" placeholder="Sinhala Description" value={form.description_si || ''} onChange={(event) => patch('description_si', event.target.value)} />
-          <textarea className="input min-h-24" placeholder="English Description" value={form.description_en || ''} onChange={(event) => patch('description_en', event.target.value)} />
-          <input className="input md:col-span-2" placeholder="Cover image URL from Media Library" value={form.coverImageUrl} onChange={(event) => patch('coverImageUrl', event.target.value)} />
-          <select className="input md:col-span-2" value={form.parentPlaylistId || ''} onChange={(event) => patch('parentPlaylistId', event.target.value)}>
-            <option value="">Main playlist</option>
-            {playlistOptions.filter((playlist) => playlist.id !== editingId && !playlist.path?.includes(editingId)).map((playlist) => <option key={playlist.id} value={playlist.id}>{`${'-- '.repeat(playlist.optionDepth || 0)}${playlist.title}`}</option>)}
-          </select>
-          <select className="input" value={form.topic} onChange={(event) => chooseTopic(event.target.value)}>{playlistTopics.map((topic) => <option key={topic}>{topic}</option>)}</select>
-          <input className="input" placeholder="Sinhala Topic" value={form.topic_si || ''} onChange={(event) => patch('topic_si', event.target.value)} />
-          <input className="input" placeholder="English Topic" value={form.topic_en || ''} onChange={(event) => patch('topic_en', event.target.value)} />
-          <input className="input" type="number" min="1" placeholder="Order" value={form.order} onChange={(event) => patch('order', event.target.value)} />
-          <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(form.isPublished)} onChange={(event) => patch('isPublished', event.target.checked)} /> Published</label>
-          <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(form.learningPathEnabled)} onChange={(event) => patch('learningPathEnabled', event.target.checked)} /> Learning Path</label>
-          <input className="input" type="number" min="1" placeholder="Learning path order" value={form.learningPathOrder} onChange={(event) => patch('learningPathOrder', event.target.value)} />
-          <input className="input" placeholder="Learning path label" value={form.learningPathLabel} onChange={(event) => patch('learningPathLabel', event.target.value)} />
-          <select className="input" value={form.theme.cardStyle} onChange={(event) => patchTheme('cardStyle', event.target.value)}>{cardStyles.map((style) => <option key={style} value={style}>{style}</option>)}</select>
-          <select className="input" value={form.theme.effect} onChange={(event) => patchTheme('effect', event.target.value)}>{playlistEffects.map((effect) => <option key={effect} value={effect}>{effect}</option>)}</select>
-          {['backgroundColor', 'textColor', 'accentColor', 'borderColor', 'gradientFrom', 'gradientTo'].map((field) => (
-            <label className="grid gap-1 text-sm font-bold text-[var(--theme-muted)]" key={field}>
-              {field}
-              <input className="input h-12" type="color" value={form.theme[field]} onChange={(event) => patchTheme(field, event.target.value)} />
-            </label>
-          ))}
-          <button className="btn btn-primary md:col-span-2">{editingId ? 'Update Playlist' : 'Create Playlist'}</button>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
+        <form onSubmit={save} className="surface grid gap-4 rounded-lg p-5">
+          <label className="grid gap-2 font-bold text-[var(--theme-primary)]">Playlist Name
+            <input className="input" required value={form.title} onChange={(event) => patch('title', event.target.value)} />
+          </label>
+          <label className="grid gap-2 font-bold text-[var(--theme-primary)]">Sinhala Name
+            <input className="input" value={form.sinhalaTitle || ''} onChange={(event) => patch('sinhalaTitle', event.target.value)} />
+          </label>
+          <label className="grid gap-2 font-bold text-[var(--theme-primary)]">Parent Playlist optional
+            <select className="input" value={form.parentPlaylistId || ''} onChange={(event) => patch('parentPlaylistId', event.target.value)}>
+              <option value="">Main playlist</option>
+              {playlistOptions.filter((playlist) => playlist.id !== editingId && !playlist.path?.includes(editingId)).map((playlist) => (
+                <option key={playlist.id} value={playlist.id}>{`${'— '.repeat(playlist.optionDepth || 0)}${playlist.title}`}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 font-bold text-[var(--theme-primary)]">Description
+            <textarea className="input min-h-28" value={form.description} onChange={(event) => patch('description', event.target.value)} />
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(form.isPublished)} onChange={(event) => patch('isPublished', event.target.checked)} /> Published</label>
+            <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(form.courseMode)} onChange={(event) => patch('courseMode', event.target.checked)} /> Enable course mode</label>
+          </div>
+          <details className="rounded-lg border border-[color-mix(in_srgb,var(--theme-accent)_28%,transparent)] p-4">
+            <summary className="cursor-pointer font-black text-[var(--theme-primary)]">Advanced style and learning path</summary>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <input className="input" placeholder="Slug" value={form.slug} onChange={(event) => patch('slug', slugify(event.target.value))} />
+              <input className="input" placeholder="Cover image URL" value={form.coverImageUrl || ''} onChange={(event) => patch('coverImageUrl', event.target.value)} />
+              <select className="input" value={form.topic} onChange={(event) => chooseTopic(event.target.value)}>{playlistTopics.map((topic) => <option key={topic}>{topic}</option>)}</select>
+              <label className="rounded-lg bg-[#fffaf0] p-3 font-bold"><input type="checkbox" checked={Boolean(form.learningPathEnabled)} onChange={(event) => patch('learningPathEnabled', event.target.checked)} /> Learning Path Map</label>
+              <input className="input" type="number" min="1" placeholder="Learning path order" value={form.learningPathOrder} onChange={(event) => patch('learningPathOrder', event.target.value)} />
+              <input className="input" placeholder="Learning path label" value={form.learningPathLabel} onChange={(event) => patch('learningPathLabel', event.target.value)} />
+              <select className="input" value={form.theme.cardStyle} onChange={(event) => patchTheme('cardStyle', event.target.value)}>{cardStyles.map((style) => <option key={style}>{style}</option>)}</select>
+              <select className="input" value={form.theme.effect} onChange={(event) => patchTheme('effect', event.target.value)}>{playlistEffects.map((effect) => <option key={effect}>{effect}</option>)}</select>
+            </div>
+          </details>
+          <button className="btn btn-primary w-full">{editingId ? 'Update Playlist' : 'Create Playlist'}</button>
         </form>
 
-        <div>
-          <p className="mb-3 text-sm font-black uppercase text-[var(--theme-muted)]">Live preview</p>
+        <div className="grid content-start gap-4">
           <PlaylistPreview playlist={preview} />
-          <div className="mt-4 grid gap-3">
-            {loading && <p>Loading playlists...</p>}
-            {!loading && toast.type === 'error' && toast.message.includes('permission-denied') && (
-              <p className="rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-800">
-                Playlist access is blocked by Firestore rules. Deploy the updated firestore.rules file and make sure you are signed in as udarasampath@gmail.com.
-              </p>
-            )}
+          {loading && <p>Loading playlists...</p>}
+          <div className="grid gap-3">
             {playlistOptions.map((playlist) => (
-              <article className="surface rounded-lg p-4" key={playlist.id}>
+              <article
+                className="surface rounded-lg p-4"
+                draggable
+                key={playlist.id}
+                onDragStart={() => setDraggedId(playlist.id)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => updateSiblingOrder(draggedId, playlist.id)}
+              >
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                  <div style={{ paddingLeft: `${(playlist.optionDepth || 0) * 18}px` }}><b className="text-[var(--theme-primary)]">{playlist.optionDepth ? '└ ' : ''}{playlist.title}</b><p className="text-sm text-[var(--theme-muted)]">{playlist.topic} / depth {playlist.depth} / order {playlist.order}</p></div>
+                  <div className="flex items-start gap-3" style={{ paddingLeft: `${(playlist.optionDepth || 0) * 18}px` }}>
+                    <GripVertical className="mt-1 shrink-0 cursor-grab text-[var(--theme-muted)]" size={18} />
+                    <div>
+                      <b className="text-[var(--theme-primary)]">{playlist.optionDepth ? '— ' : ''}{playlist.title}</b>
+                      <p className="text-sm text-[var(--theme-muted)]">{playlist.parentPlaylistId ? 'Sub playlist' : 'Main playlist'} / order {playlist.order}{playlist.courseMode ? ' / course mode' : ''}</p>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
-                    <button className="btn btn-outline" type="button" onClick={() => addSubPlaylist(playlist)}><Plus size={16} />Add Sub Playlist</button>
+                    <button className="btn btn-outline" type="button" onClick={() => addSubPlaylist(playlist)}><Plus size={16} />Sub</button>
                     <Link className="btn btn-outline" to="/admin/videos">Add Video</Link>
-                    <Link className="btn btn-outline" to={getPlaylistRoute(playlist)}>View Videos</Link>
+                    <Link className="btn btn-outline" to={getPlaylistRoute(playlist)}>View</Link>
                     <button className="btn btn-outline" type="button" onClick={() => toggle(playlist)}><Eye size={16} />{playlist.isPublished ? 'Published' : 'Hidden'}</button>
                     <button className="btn btn-outline" type="button" onClick={() => edit(playlist)}><Edit3 size={16} /></button>
                     <button className="btn btn-primary" type="button" onClick={() => remove(playlist)}><Trash2 size={16} /></button>

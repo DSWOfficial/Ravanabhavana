@@ -148,6 +148,7 @@ export function useSavedLibrary() {
         playlistId: video.playlistId || '',
         watchedSeconds: progress[video.id]?.watchedSeconds || 0,
         completed: true,
+        completedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }, { merge: true });
       show('Marked as watched.');
@@ -171,6 +172,7 @@ export function PlaylistCard({ playlist, onSave, saved }) {
           <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase" style={{ backgroundColor: theme.accentColor, color: theme.backgroundColor }}>{getLocalized(playlist, 'topic', playlist.topic)}</span>
           <h3 className="mt-4 text-2xl font-black">{getLocalized(playlist, 'title', playlist.title)}</h3>
           <p className="mt-2 line-clamp-3 leading-7 opacity-90">{getLocalized(playlist, 'description', playlist.description)}</p>
+          {playlist.courseMode && <span className="mt-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black">Course mode</span>}
           <p className="mt-4 text-sm font-black opacity-80">{playlist.subPlaylistCount || 0} {t('video.folders')} / {playlist.videoCount || 0} {t('video.videos')}</p>
         </div>
       </Link>
@@ -334,14 +336,23 @@ export function YouTubeEmbed({ video }) {
   );
 }
 
-export function filterVideos(videos, playlists, { search = '', playlistId = 'all', level = 'all', tag = 'all', sort = 'order' }) {
+export function filterVideos(videos, playlists, { search = '', playlistId = 'all', subPlaylistId = 'all', level = 'all', tag = 'all', sort = 'order', featuredOnly = false, latestOnly = false }) {
   const playlistMap = Object.fromEntries(playlists.map((playlist) => [playlist.id, playlist]));
   let list = videos.filter((video) => searchMatchesVideo(video, playlistMap[video.playlistId] || video.playlist, search));
-  if (playlistId !== 'all') list = list.filter((video) => (video.playlistId || 'uncategorized') === playlistId);
+  if (subPlaylistId !== 'all') list = list.filter((video) => (video.playlistId || 'uncategorized') === subPlaylistId);
+  else if (playlistId !== 'all') list = list.filter((video) => (video.playlistId || 'uncategorized') === playlistId || (video.playlistPath || []).includes(playlistId));
   if (level !== 'all') list = list.filter((video) => video.level === level);
   if (tag !== 'all') list = list.filter((video) => (video.tags || []).includes(tag));
+  if (featuredOnly) list = list.filter((video) => video.featured);
+  if (latestOnly) {
+    const newest = [...list].sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt)).slice(0, 12);
+    const newestIds = new Set(newest.map((video) => video.id));
+    list = list.filter((video) => newestIds.has(video.id));
+  }
   if (sort === 'newest') list = [...list].sort((a, b) => toMillis(b.createdAt) - toMillis(a.createdAt));
   else if (sort === 'oldest') list = [...list].sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
+  else if (sort === 'mostWatched') list = [...list].sort((a, b) => (b.watchCount || 0) - (a.watchCount || 0) || a.order - b.order);
+  else if (sort === 'recommended') list = [...list].sort((a, b) => Number(b.featured) - Number(a.featured) || (a.level === 'Beginner' ? -1 : 1) || a.order - b.order);
   else if (sort === 'featured') list = [...list].sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
   else list = sortByOrderThenNewest(list);
   return list;

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Bookmark, CheckCircle2 } from 'lucide-react';
+import { Bookmark, CheckCircle2, Download, ExternalLink, FileImage, FileMusic, FileText, FileVideo, Link as LinkIcon } from 'lucide-react';
 import Header from '../components/public/Header.jsx';
 import Footer from '../components/public/Footer.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
@@ -15,6 +15,10 @@ export default function VideoDetailPage() {
   const video = videos.find((item) => item.slug === slug);
   const notes = useVideoNotes(video);
   const breadcrumbs = video?.playlist ? getPlaylistBreadcrumb(video.playlist, playlistMap) : [];
+  const playlistVideos = useMemo(() => video ? videos.filter((item) => item.playlist?.id === video.playlist?.id) : [], [video, videos]);
+  const lessonNumber = video ? playlistVideos.findIndex((item) => item.id === video.id) + 1 : 0;
+  const completedCount = playlistVideos.filter((item) => saved.progress[item.id]?.completed).length;
+  const progressPercent = playlistVideos.length ? Math.round((completedCount / playlistVideos.length) * 100) : 0;
   const nextVideos = useMemo(() => {
     if (!video) return [];
     return videos.filter((item) => item.id !== video.id && item.playlist?.id === video.playlist?.id).slice(0, 4);
@@ -44,6 +48,15 @@ export default function VideoDetailPage() {
                       {breadcrumbs.map((item) => <span key={item.id}>/ <Link to={getPlaylistRoute(item)}>{getLocalized(item, 'title', item.title)}</Link></span>)}
                     </div>
                     <h1 className="mt-2 text-4xl font-black text-[var(--theme-primary)]">{getLocalized(video, 'title', video.title)}</h1>
+                    {video.playlist?.courseMode && (
+                      <div className="mt-4 rounded-lg bg-[var(--theme-section)] p-4">
+                        <div className="flex flex-wrap justify-between gap-3 font-black text-[var(--theme-primary)]">
+                          <span>Lesson {lessonNumber}: {getLocalized(video, 'title', video.title)}</span>
+                          {saved.user && <span>{completedCount}/{playlistVideos.length} completed · {progressPercent}%</span>}
+                        </div>
+                        {saved.user && <div className="mt-3 h-3 overflow-hidden rounded-full bg-white"><span className="block h-full rounded-full bg-[var(--theme-accent)]" style={{ width: `${progressPercent}%` }} /></div>}
+                      </div>
+                    )}
                     <div className="mt-4 flex flex-wrap gap-2">
                       {video.tags?.map((tag) => <span className="rounded-full bg-[var(--theme-section)] px-3 py-1 text-xs font-black text-[var(--theme-primary)]" key={tag}>{tag}</span>)}
                     </div>
@@ -55,6 +68,20 @@ export default function VideoDetailPage() {
                       <Link className="btn btn-primary" to={getPlaylistRoute(video.playlist)}>{t('video.backToPlaylist')}</Link>
                     </div>
                   </div>
+                  {video.lessonNotes && (
+                    <section className="mt-5 surface rounded-lg p-6">
+                      <h2 className="text-2xl font-black text-[var(--theme-primary)]">Lesson Notes</h2>
+                      <div className="prose-notes mt-4 leading-8 text-[var(--theme-text)]" dangerouslySetInnerHTML={{ __html: renderLessonNotes(video.lessonNotes) }} />
+                    </section>
+                  )}
+                  {!!video.materials?.length && (
+                    <section className="mt-5 surface rounded-lg p-6">
+                      <h2 className="text-2xl font-black text-[var(--theme-primary)]">Study Materials</h2>
+                      <div className="mt-4 grid gap-3">
+                        {video.materials.map((material) => <MaterialCard material={material} key={material.id} />)}
+                      </div>
+                    </section>
+                  )}
                 </div>
                 <aside className="grid content-start gap-4">
                   <div className="surface rounded-lg p-5">
@@ -83,6 +110,59 @@ export default function VideoDetailPage() {
       <Footer />
     </>
   );
+}
+
+function renderLessonNotes(value = '') {
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(value);
+  if (looksLikeHtml) return value;
+  return value
+    .split(/\n{2,}/)
+    .map((block) => {
+      const lines = block.split('\n');
+      if (lines.every((line) => /^\s*[-*]\s+/.test(line))) {
+        return `<ul>${lines.map((line) => `<li>${inlineMarkdown(line.replace(/^\s*[-*]\s+/, ''))}</li>`).join('')}</ul>`;
+      }
+      return `<p>${inlineMarkdown(lines.join('<br />'))}</p>`;
+    })
+    .join('');
+}
+
+function inlineMarkdown(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
+}
+
+function MaterialCard({ material }) {
+  const Icon = getMaterialIcon(material.type);
+  return (
+    <article className="flex flex-col justify-between gap-3 rounded-lg border border-[color-mix(in_srgb,var(--theme-accent)_24%,transparent)] bg-[var(--theme-section)] p-4 sm:flex-row sm:items-center">
+      <div className="flex items-start gap-3">
+        <Icon className="mt-1 text-[var(--theme-accent)]" size={24} />
+        <div>
+          <h3 className="font-black text-[var(--theme-primary)]">{material.title}</h3>
+          {material.description && <p className="mt-1 text-sm text-[var(--theme-muted)]">{material.description}</p>}
+          <span className="mt-2 inline-flex rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-[var(--theme-primary)]">{material.type}</span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <a className="btn btn-outline" href={material.url} target="_blank" rel="noreferrer"><ExternalLink size={16} />Open</a>
+        {material.downloadable && <a className="btn btn-primary" href={material.url} download target="_blank" rel="noreferrer"><Download size={16} />Download</a>}
+      </div>
+    </article>
+  );
+}
+
+function getMaterialIcon(type = '') {
+  const value = type.toLowerCase();
+  if (value.includes('pdf') || value.includes('document')) return FileText;
+  if (value.includes('image')) return FileImage;
+  if (value.includes('audio')) return FileMusic;
+  if (value.includes('video')) return FileVideo;
+  return LinkIcon;
 }
 
 function SmallVideoLink({ video }) {

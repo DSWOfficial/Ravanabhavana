@@ -12,14 +12,18 @@ export default function VideoLibraryPage() {
   const { getLocalized, t } = useLanguage();
   const [search, setSearch] = useState('');
   const [playlistId, setPlaylistId] = useState('all');
+  const [subPlaylistId, setSubPlaylistId] = useState('all');
   const [level, setLevel] = useState('all');
   const [tag, setTag] = useState('all');
   const [sort, setSort] = useState('order');
+  const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [latestOnly, setLatestOnly] = useState(false);
   const [goal, setGoal] = useState('peace');
 
   const tags = useMemo(() => [...new Set(videos.flatMap((video) => video.tags || []))].sort(), [videos]);
-  const filtered = useMemo(() => filterVideos(videos, playlists, { search, playlistId, level, tag, sort }), [level, playlistId, playlists, search, sort, tag, videos]);
+  const filtered = useMemo(() => filterVideos(videos, playlists, { search, playlistId, subPlaylistId, level, tag, sort, featuredOnly, latestOnly }), [featuredOnly, latestOnly, level, playlistId, playlists, search, sort, subPlaylistId, tag, videos]);
   const mainPlaylists = playlists.filter((playlist) => !playlist.parentPlaylistId);
+  const subPlaylistOptions = playlists.filter((playlist) => playlist.parentPlaylistId && (playlistId === 'all' || playlist.parentPlaylistId === playlistId));
   const featuredPlaylists = mainPlaylists.filter((playlist) => playlist.videoCount > 0 || playlist.subPlaylistCount > 0).slice(0, 4);
   const featuredVideos = videos.filter((video) => video.featured).slice(0, 6);
   const continueWatching = videos.filter((video) => saved.progress[video.id] && !saved.progress[video.id].completed).slice(0, 4);
@@ -104,11 +108,17 @@ export default function VideoLibraryPage() {
                 <div className="flex flex-wrap gap-2">
                   <select className="input w-auto min-w-40" value={playlistId} onChange={(event) => setPlaylistId(event.target.value)}>
                     <option value="all">{t('video.playlists')}</option>
-                    {playlists.map((playlist) => <option key={playlist.id} value={playlist.id}>{`${'-- '.repeat(playlist.depth || 0)}${playlist.title}`}</option>)}
+                    {mainPlaylists.map((playlist) => <option key={playlist.id} value={playlist.id}>{playlist.title}</option>)}
+                  </select>
+                  <select className="input w-auto min-w-40" value={subPlaylistId} onChange={(event) => setSubPlaylistId(event.target.value)}>
+                    <option value="all">{t('video.subPlaylist')}</option>
+                    {subPlaylistOptions.map((playlist) => <option key={playlist.id} value={playlist.id}>{`${'— '.repeat(playlist.depth || 0)}${playlist.title}`}</option>)}
                   </select>
                   <select className="input w-auto min-w-36" value={level} onChange={(event) => setLevel(event.target.value)}><option value="all">{t('common.all')}</option>{videoLevels.map((item) => <option key={item}>{item}</option>)}</select>
                   <select className="input w-auto min-w-32" value={tag} onChange={(event) => setTag(event.target.value)}><option value="all">{t('common.all')}</option>{tags.map((item) => <option key={item}>{item}</option>)}</select>
-                  <select className="input w-auto min-w-36" value={sort} onChange={(event) => setSort(event.target.value)}><option value="order">{t('video.playlist')}</option><option value="newest">Newest</option><option value="oldest">Oldest</option><option value="featured">{t('common.featured')}</option></select>
+                  <select className="input w-auto min-w-36" value={sort} onChange={(event) => setSort(event.target.value)}><option value="order">{t('video.playlist')}</option><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="mostWatched">Most watched</option><option value="recommended">Recommended</option><option value="featured">{t('common.featured')}</option></select>
+                  <label className="inline-flex items-center gap-2 rounded-lg bg-[var(--theme-section)] px-4 py-3 font-bold text-[var(--theme-primary)]"><input type="checkbox" checked={featuredOnly} onChange={(event) => setFeaturedOnly(event.target.checked)} /> Featured videos</label>
+                  <label className="inline-flex items-center gap-2 rounded-lg bg-[var(--theme-section)] px-4 py-3 font-bold text-[var(--theme-primary)]"><input type="checkbox" checked={latestOnly} onChange={(event) => setLatestOnly(event.target.checked)} /> Latest videos</label>
                 </div>
               </SectionTitle>
               <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">

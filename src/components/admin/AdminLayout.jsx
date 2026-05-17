@@ -13,15 +13,15 @@ export default function AdminLayout({ children, title, activePage, setActivePage
   }, []);
 
   return (
-    <main className="min-h-screen bg-[var(--theme-section)] text-[var(--theme-text)]">
-      <div className="lg:flex">
+    <main className="admin-layout bg-[var(--theme-section)] text-[var(--theme-text)]">
+      <div className="w-full">
         <AdminSidebar open={sidebarOpen} setOpen={setSidebarOpen} collapsed={sidebarCollapsed} activePage={activePage} setActivePage={setActivePage} />
-        <section className={`min-h-screen flex-1 transition-[padding] ${sidebarCollapsed ? 'lg:pl-0' : 'lg:pl-72'}`}>
+        <section className={`admin-main transition-[margin,width] ${sidebarCollapsed ? 'admin-main-expanded' : ''}`}>
           <AdminTopbar title={title} email={email} onMenu={() => {
             if (window.matchMedia('(min-width: 1024px)').matches) setSidebarCollapsed((value) => !value);
             else setSidebarOpen(true);
           }} />
-          <div className="container-shell py-6">{children}</div>
+          <div className="admin-content">{children}</div>
         </section>
       </div>
     </main>

@@ -1,5 +1,7 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import SiteTheme from './components/public/SiteTheme.jsx';
+import SiteSeo from './components/public/SiteSeo.jsx';
+import AnnouncementBar from './components/public/AnnouncementBar.jsx';
 import Login from './pages/Login.jsx';
 import UserDashboard from './pages/UserDashboard.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
@@ -19,6 +21,9 @@ import CmsMedia from './pages/admin/CmsMedia.jsx';
 import CmsSeo from './pages/admin/CmsSeo.jsx';
 import DynamicPage from './pages/DynamicPage.jsx';
 import HomepageEditor from './pages/admin/HomepageEditor.jsx';
+import HomepageSections from './pages/admin/HomepageSections.jsx';
+import AnnouncementBarManager from './pages/admin/AnnouncementBarManager.jsx';
+import BackupExport from './pages/admin/BackupExport.jsx';
 import PublicHome from './pages/PublicHome.jsx';
 import GuidancePage from './pages/GuidancePage.jsx';
 import VideoLibraryPage from './pages/VideoLibraryPage.jsx';
@@ -31,6 +36,8 @@ export default function App() {
   return (
     <>
       <SiteTheme />
+      <SiteSeo />
+      <AnnouncementBar />
       <Routes>
         <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<Login />} />
@@ -44,6 +51,9 @@ export default function App() {
         <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
         <Route path="/admin/cms" element={<AdminRoute><AdminCmsDashboard /></AdminRoute>} />
         <Route path="/admin/homepage" element={<AdminRoute><HomepageEditor /></AdminRoute>} />
+        <Route path="/admin/homepage-sections" element={<AdminRoute><HomepageSections /></AdminRoute>} />
+        <Route path="/admin/announcement-bar" element={<AdminRoute><AnnouncementBarManager /></AdminRoute>} />
+        <Route path="/admin/backup-export" element={<AdminRoute><BackupExport /></AdminRoute>} />
         <Route path="/admin/banners" element={<AdminRoute><AdminBanners /></AdminRoute>} />
         <Route path="/admin/guidance" element={<AdminRoute><AdminGuidance /></AdminRoute>} />
         <Route path="/admin/weekly-sessions" element={<AdminRoute><AdminWeeklySessions /></AdminRoute>} />
