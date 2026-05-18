@@ -3,7 +3,7 @@ import { getAnalytics, isSupported } from 'firebase/analytics';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyD6hoHBMtG3Ep8j_OQl2WmhZiL1tR9uH_U',
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'focusforge-8f346.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'focusforge-8f346',

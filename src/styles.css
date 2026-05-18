@@ -277,6 +277,205 @@ a.surface:active,
   white-space: nowrap;
 }
 
+.live-hero-card,
+.live-home-card {
+  align-items: center;
+  background: linear-gradient(135deg, #102927, #1f453f);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 42%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(16, 41, 39, 0.24);
+  color: var(--theme-hero-text);
+  display: grid;
+  gap: 24px;
+  overflow: hidden;
+  padding: 28px;
+}
+
+.live-hero-card {
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+}
+
+.live-home-card {
+  grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+}
+
+.live-hero-image,
+.live-home-image {
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.live-status-badge,
+.live-status-strip {
+  align-items: center;
+  background: var(--theme-accent);
+  border-radius: 999px;
+  color: var(--theme-hero);
+  display: inline-flex;
+  font-weight: 950;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.live-status-strip {
+  border-radius: 14px;
+  justify-content: center;
+  padding: 14px 18px;
+}
+
+.live-session-header {
+  align-items: center;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.live-meeting-card {
+  background: var(--theme-surface);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 26%, transparent);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(16, 41, 39, 0.16);
+  padding: 18px;
+}
+
+.live-meeting-frame {
+  aspect-ratio: 16 / 9;
+  background: #0b0b0b;
+  border: 0;
+  border-radius: 14px;
+  min-height: 540px;
+  width: 100%;
+}
+
+.youtube-live-shell {
+  background: var(--theme-surface);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 24%, transparent);
+  border-radius: 20px;
+  box-shadow: 0 22px 70px rgba(16, 41, 39, 0.14);
+  padding: 22px;
+}
+
+.youtube-live-header {
+  align-items: end;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.youtube-live-grid {
+  align-items: stretch;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.34fr);
+}
+
+.youtube-live-grid-video-only {
+  grid-template-columns: 1fr;
+}
+
+.youtube-live-player,
+.youtube-live-playlist {
+  aspect-ratio: 16 / 9;
+  background: #0b0b0b;
+  border-radius: 18px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.youtube-live-player iframe,
+.youtube-live-playlist iframe,
+.youtube-live-chat iframe {
+  border: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.youtube-live-chat {
+  background: var(--theme-section);
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  border-radius: 18px;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.youtube-live-status {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 950;
+  padding: 8px 13px;
+}
+
+.youtube-live-status-live {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.youtube-live-status-upcoming {
+  background: #d6a84f;
+  color: #1f160b;
+}
+
+.youtube-live-status-offline {
+  background: #e7ddc7;
+  color: #4b3a25;
+}
+
+.youtube-live-status-replay {
+  background: #102927;
+  color: #fff6d6;
+}
+
+.youtube-live-empty {
+  border: 1px dashed color-mix(in srgb, var(--theme-accent) 45%, transparent);
+  border-radius: 18px;
+  padding: 42px 24px;
+  text-align: center;
+}
+
+.live-home-placeholder {
+  align-items: center;
+  aspect-ratio: 16 / 10;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  color: var(--theme-accent);
+  display: grid;
+  font-weight: 950;
+  justify-items: center;
+  min-height: 240px;
+}
+
+@media (max-width: 900px) {
+  .live-hero-card,
+  .live-home-card,
+  .live-session-header {
+    grid-template-columns: 1fr;
+  }
+
+  .live-meeting-frame {
+    min-height: 420px;
+  }
+
+  .youtube-live-header,
+  .youtube-live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .youtube-live-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .youtube-live-chat {
+    min-height: 460px;
+  }
+}
+
 .announcement-close {
   align-items: center;
   background: rgba(255, 255, 255, 0.16);

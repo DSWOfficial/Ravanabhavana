@@ -10,6 +10,7 @@ const fallbackLinks = [
   ['nav.about', '/#about'],
   ['nav.services', '/#services'],
   ['nav.videos', '/videos'],
+  ['live.liveSessions', '/live'],
   ['nav.weeklySession', '/#session'],
   ['nav.support', '/#support'],
   ['nav.contact', '/#contact'],
@@ -30,7 +31,7 @@ export default function Header() {
     return () => { mounted = false; };
   }, []);
 
-  const links = navItems.length ? navItems.map((item) => [getLocalized(item, 'label', item.label), item.url]) : fallbackLinks.map(([key, href]) => [t(key), href]);
+  const links = navItems.length ? withRequiredPublicLinks(navItems.map((item) => [getLocalized(item, 'label', item.label), item.url]), t) : fallbackLinks.map(([key, href]) => [t(key), href]);
   const languageToggle = (
     <div className="relative">
       <button className="language-toggle" type="button" onClick={() => setLanguageOpen((value) => !value)} aria-label="Change language">
@@ -98,4 +99,12 @@ export default function Header() {
       )}
     </header>
   );
+}
+
+function withRequiredPublicLinks(items, t) {
+  if (items.some(([, href]) => href === '/live')) return items;
+  const next = [...items];
+  const videoIndex = next.findIndex(([, href]) => href === '/videos');
+  next.splice(videoIndex >= 0 ? videoIndex + 1 : next.length, 0, [t('live.liveSessions'), '/live']);
+  return next;
 }

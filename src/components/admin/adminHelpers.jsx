@@ -15,6 +15,8 @@ export function PermissionError({ error }) {
       {error.path && <p className="mb-2 text-red-900">Firestore path: {error.path}</p>}
       {error.collectionName && <p className="mb-2 text-red-900">Collection: {error.collectionName}</p>}
       {error.code && <p className="mb-2 text-red-900">Code: {error.code}</p>}
+      {error.signedInEmail && <p className="mb-2 text-red-900">Signed-in admin email: {error.signedInEmail}</p>}
+      {error.projectId && <p className="mb-2 text-red-900">Firebase projectId: {error.projectId}</p>}
       <p>{error.message || String(error)}</p>
       <p className="mt-2">If this says "Missing or insufficient permissions", deploy the updated Firestore rules and confirm the signed-in admin email is udarasampath@gmail.com.</p>
     </div>

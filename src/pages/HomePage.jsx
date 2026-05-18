@@ -8,6 +8,7 @@ import Services from '../components/public/Services.jsx';
 import Support from '../components/public/Support.jsx';
 import Videos from '../components/public/Videos.jsx';
 import WeeklySession from '../components/public/WeeklySession.jsx';
+import RavanaLiveSection from '../components/public/RavanaLiveSection.jsx';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '../firebase.js';
@@ -30,6 +31,7 @@ export default function HomePage() {
     videos: <Videos />,
     guidance: <AnonymousGuidance compact />,
     weeklySession: <><NextWeeklySession /><WeeklySession /></>,
+    live: <RavanaLiveSection />,
     support: <Support />,
     contact: <Contact />,
     faq: <OptionalSection title="FAQ" />,
@@ -46,6 +48,7 @@ export default function HomePage() {
           ) : sectionMap[section.id] || null}
         </section>
       ))}
+      {!sections.some((section) => section.id === 'live') && <RavanaLiveSection />}
     </>
   );
 }

@@ -4,13 +4,14 @@ export const defaultHomepageSections = [
   { id: 'about', label: 'About', enabled: true, order: 3, title: '', subtitle: '', layout: 'default' },
   { id: 'services', label: 'Services', enabled: true, order: 4, title: '', subtitle: '', layout: 'default' },
   { id: 'videos', label: 'Videos', enabled: true, order: 5, title: '', subtitle: '', layout: 'default' },
-  { id: 'guidance', label: 'Anonymous Guidance', enabled: true, order: 6, title: '', subtitle: '', layout: 'default' },
-  { id: 'weeklySession', label: 'Weekly Session', enabled: true, order: 7, title: '', subtitle: '', layout: 'default' },
-  { id: 'support', label: 'Support', enabled: true, order: 8, title: '', subtitle: '', layout: 'default' },
-  { id: 'contact', label: 'Contact', enabled: true, order: 9, title: '', subtitle: '', layout: 'default' },
-  { id: 'faq', label: 'FAQ', enabled: false, order: 10, title: '', subtitle: '', layout: 'default' },
-  { id: 'testimonials', label: 'Testimonials', enabled: false, order: 11, title: '', subtitle: '', layout: 'default' },
-  { id: 'customHtml', label: 'Custom HTML / Custom Section', enabled: false, order: 12, title: '', subtitle: '', layout: 'default' },
+  { id: 'live', label: 'Ravana Bhavana Live', enabled: true, order: 6, title: '', subtitle: '', layout: 'default' },
+  { id: 'guidance', label: 'Anonymous Guidance', enabled: true, order: 7, title: '', subtitle: '', layout: 'default' },
+  { id: 'weeklySession', label: 'Weekly Session', enabled: true, order: 8, title: '', subtitle: '', layout: 'default' },
+  { id: 'support', label: 'Support', enabled: true, order: 9, title: '', subtitle: '', layout: 'default' },
+  { id: 'contact', label: 'Contact', enabled: true, order: 10, title: '', subtitle: '', layout: 'default' },
+  { id: 'faq', label: 'FAQ', enabled: false, order: 11, title: '', subtitle: '', layout: 'default' },
+  { id: 'testimonials', label: 'Testimonials', enabled: false, order: 12, title: '', subtitle: '', layout: 'default' },
+  { id: 'customHtml', label: 'Custom HTML / Custom Section', enabled: false, order: 13, title: '', subtitle: '', layout: 'default' },
 ];
 
 export const defaultSeoSettings = {

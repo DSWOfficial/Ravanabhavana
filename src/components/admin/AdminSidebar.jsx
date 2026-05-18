@@ -1,4 +1,4 @@
-import { Banknote, BarChart3, Bell, CalendarClock, Download, Eye, FileText, Gift, HeartHandshake, Home, Images, Layers3, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Search, Settings2, ShieldAlert, Users, Video, X } from 'lucide-react';
+import { Banknote, BarChart3, Bell, CalendarClock, Download, Eye, FileText, Gift, HeartHandshake, Home, Images, Layers3, Link as LinkIcon, LogOut, Menu, Palette, PlaySquare, Radio, Search, Settings2, ShieldAlert, Users, Video, X } from 'lucide-react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase.js';
@@ -25,6 +25,7 @@ const cmsItems = [
   ['/admin/banners', 'Banners', Bell],
   ['/admin/guidance', 'Guidance', HeartHandshake],
   ['/admin/weekly-sessions', 'Weekly Sessions', CalendarClock],
+  ['/admin/live-sessions', 'Live Sessions / සජීවී වැඩසටහන්', Radio],
   ['/admin/blocked-users', 'Blocked Users', ShieldAlert],
   ['/admin/playlists', 'Playlists', Layers3],
   ['/admin/videos', 'Video Editor', PlaySquare],
