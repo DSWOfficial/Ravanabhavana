@@ -1,47 +1,61 @@
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { Bell, PlayCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LiveStatusBadge } from './YouTubeLive.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { db } from '../../firebase.js';
-import { getCountdownParts, getLiveStatus, normalizeLiveSettings, sanitizeYouTubeVideoId, toDate } from '../../lib/youtubeLive.js';
+import { normalizeLiveSession, sanitizeYouTubeVideoId } from '../../lib/youtubeLive.js';
 
 export default function RavanaLiveSection() {
   const { t } = useLanguage();
-  const [settings, setSettings] = useState(normalizeLiveSettings());
-  const [tick, setTick] = useState(Date.now());
-
-  useEffect(() => onSnapshot(doc(db, 'siteSettings', 'liveSession'), (snap) => {
-    setSettings(normalizeLiveSettings(snap.exists() ? snap.data() : {}));
-  }, (error) => console.error('[RavanaLiveSection] load failed:', error)), []);
+  const [session, setSession] = useState(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setTick(Date.now()), 1000);
-    return () => window.clearInterval(timer);
+    const q = query(collection(db, 'liveSessions'), where('status', '==', 'live'), where('isVisible', '==', true));
+    return onSnapshot(q, (snap) => {
+      setSession(snap.docs.map((item) => normalizeLiveSession(item.data(), item.id))[0] || null);
+      setLoaded(true);
+    }, (error) => {
+      console.error('[RavanaLiveSection] active live load failed:', error);
+      setLoaded(true);
+    });
   }, []);
 
-  const status = getLiveStatus(settings);
-  const cleanId = sanitizeYouTubeVideoId(settings.youtubeVideoId);
-  const sessionDate = toDate(settings.sessionDateTime);
-  const parts = getCountdownParts(settings.sessionDateTime);
+  if (loaded && !session) {
+    return (
+      <section id="ravana-live" className="section bg-[var(--theme-section)]">
+        <div className="container-shell">
+          <article className="live-home-mini">
+            <Bell className="text-[var(--theme-accent)]" size={26} />
+            <div>
+              <h2 className="text-2xl font-black text-[var(--theme-primary)]">{t('live.title')}</h2>
+              <p className="mt-1 text-[var(--theme-muted)]">No live session is active right now. Please check back for the next weekly session.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    );
+  }
+
+  if (!session) return null;
+  const hasVideo = Boolean(sanitizeYouTubeVideoId(session.youtubeUrl));
 
   return (
     <section id="ravana-live" className="section bg-[var(--theme-section)]">
       <div className="container-shell">
-        <article className="live-home-card">
+        <article className="live-home-card live-home-card-active">
           <div>
-            <LiveStatusBadge settings={settings} />
+            <LiveStatusBadge settings={session} />
             <h2 className="mt-4 text-4xl font-black">{t('live.title')}</h2>
-            <h3 className="mt-3 text-2xl font-black text-[var(--theme-accent)]">{settings.sessionTitle || t('live.liveSessions')}</h3>
-            <p className="mt-3 max-w-3xl leading-8 opacity-90">{settings.sessionDescription || settings.offlineMessage || t('live.empty')}</p>
-            {status === 'upcoming' && sessionDate && <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">{[[t('weekly.days'), parts.days], [t('weekly.hours'), parts.hours], [t('weekly.minutes'), parts.minutes], [t('weekly.seconds'), parts.seconds]].map(([label, value]) => <div className="rounded-lg bg-black/20 p-3 text-center" key={label}><b className="block text-2xl text-[var(--theme-accent)]">{String(value).padStart(2, '0')}</b><span className="text-xs font-bold">{label}</span></div>)}</div>}
+            <h3 className="mt-3 text-2xl font-black text-[var(--theme-accent)]">{session.title}</h3>
+            <p className="mt-3 max-w-3xl leading-8 opacity-90">{session.description}</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-gold" to="/live"><PlayCircle size={18} />{settings.isLiveEnabled && cleanId ? t('live.joinNow') : t('live.joinLive')}</Link>
-              {settings.youtubeChannelUrl && <a className="btn btn-outline border-[var(--theme-accent)] text-[var(--theme-hero-text)]" href={settings.youtubeChannelUrl} target="_blank" rel="noreferrer">{t('live.subscribe')}</a>}
+              <Link className="btn btn-gold" to="/live"><PlayCircle size={18} />{hasVideo ? t('live.joinNow') : t('live.joinLive')}</Link>
             </div>
           </div>
-          <div className="live-home-placeholder"><Bell size={56} /><span>YouTube Live</span></div>
+          {session.thumbnailUrl ? <img src={session.thumbnailUrl} alt="" className="live-home-image" /> : <div className="live-home-placeholder"><Bell size={56} /><span>YouTube Live</span></div>}
         </article>
       </div>
     </section>

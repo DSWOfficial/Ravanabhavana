@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import { getLiveStatus, sanitizeYouTubeVideoId } from '../../lib/youtubeLive.js';
+import { getLiveStatus, sanitizeYouTubeVideoId, youtubeUrlToEmbedUrl } from '../../lib/youtubeLive.js';
 
 export function LivePlayer({ videoId, title }) {
   const cleanId = sanitizeYouTubeVideoId(videoId);
@@ -8,7 +8,7 @@ export function LivePlayer({ videoId, title }) {
   return (
     <div className="youtube-live-player">
       <iframe
-        src={`https://www.youtube.com/embed/${cleanId}?autoplay=0&rel=0&modestbranding=1`}
+        src={youtubeUrlToEmbedUrl(cleanId)}
         title={title || 'Ravana Bhavana Live'}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen
