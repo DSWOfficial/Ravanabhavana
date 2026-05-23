@@ -1,6 +1,27 @@
 import { collection, doc, getDocs, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '../firebase.js';
 
+export const HOME_SECTIONS_COLLECTION = 'homeSections';
+export const homeSectionPath = (id) => `${HOME_SECTIONS_COLLECTION}/${id}`;
+export const homeSectionDoc = (id) => doc(db, HOME_SECTIONS_COLLECTION, id);
+
+export function timestampCacheKey(value) {
+  if (!value) return '';
+  if (typeof value.toMillis === 'function') return String(value.toMillis());
+  if (typeof value.toDate === 'function') return String(value.toDate().getTime());
+  if (value instanceof Date) return String(value.getTime());
+  if (typeof value === 'object' && Number.isFinite(value.seconds)) return `${value.seconds}${value.nanoseconds || 0}`;
+  return String(value);
+}
+
+export function cacheBustedImageUrl(url, updatedAt) {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  const cacheKey = timestampCacheKey(updatedAt);
+  if (!cacheKey) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(cacheKey)}`;
+}
+
 export const defaultHomeSections = {
   hero: {
     eyebrow: 'හෙළ උරුමය · ආධ්‍යාත්මික ප්‍රඥාව',
@@ -82,7 +103,7 @@ export const defaultServices = [
 
 export async function seedDefaultHomeContent(userEmail = '') {
   const writes = [
-    ...Object.entries(defaultHomeSections).map(([id, data]) => [`homeSections/${id}`, data]),
+    ...Object.entries(defaultHomeSections).map(([id, data]) => [homeSectionPath(id), data]),
     ['donationSettings/main', {
       organizationName: 'රාවණ භවණ',
       accountHolderName: 'S. Udara Sampath Rodrigo',

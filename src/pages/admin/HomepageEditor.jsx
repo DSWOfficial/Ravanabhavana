@@ -1,11 +1,11 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, getDoc, getDocs, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
 import { ImageIcon, Save, Wand2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { AdminCard, BackToDashboard, PermissionError, Toast, cmsError, emptyToast } from '../../components/admin/adminHelpers.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { db } from '../../firebase.js';
-import { defaultHomeSections, seedDefaultHomeContent } from '../../lib/homeContent.js';
+import { defaultHomeSections, homeSectionDoc, homeSectionPath, seedDefaultHomeContent } from '../../lib/homeContent.js';
 
 const sectionIds = ['hero', 'about', 'countdown', 'contact', 'footer'];
 
@@ -48,7 +48,7 @@ export default function HomepageEditor() {
   const { user } = useAuth();
 
   useEffect(() => {
-    Promise.all(sectionIds.map((id) => getDoc(doc(db, 'homeSections', id)).then((snap) => [id, snap.exists() ? snap.data() : defaultHomeSections[id]]).catch((error) => { throw cmsError(error, `homeSections/${id}`); })))
+    Promise.all(sectionIds.map((id) => getDoc(homeSectionDoc(id)).then((snap) => [id, snap.exists() ? snap.data() : defaultHomeSections[id]]).catch((error) => { throw cmsError(error, homeSectionPath(id)); })))
       .then((entries) => setSections(Object.fromEntries(entries)))
       .catch((error) => { console.error('[HomepageEditor] load failed:', error); setLoadError(error); setToast({ type: 'error', message: error.message }); });
     getDocs(query(collection(db, 'media'), orderBy('createdAt', 'desc')))
@@ -63,10 +63,10 @@ export default function HomepageEditor() {
         setToast({ type: 'error', message: `${id}: image URL must be a public URL or local / asset path` });
         return;
       }
-      await setDoc(doc(db, 'homeSections', id), { ...sections[id], updatedAt: serverTimestamp(), updatedBy: user?.email || '' }, { merge: true });
+      await setDoc(homeSectionDoc(id), { ...sections[id], updatedAt: serverTimestamp(), updatedBy: user?.email || '' }, { merge: true });
       setToast({ type: 'success', message: `${id} saved` });
     } catch (error) {
-      const next = cmsError(error, `homeSections/${id}`);
+      const next = cmsError(error, homeSectionPath(id));
       console.error('[HomepageEditor] save failed:', next);
       setLoadError(next);
       setToast({ type: 'error', message: next.message });

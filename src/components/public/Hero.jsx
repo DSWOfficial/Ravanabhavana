@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../../firebase.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import { defaultHomeSections } from '../../lib/homeContent.js';
+import { cacheBustedImageUrl, defaultHomeSections, homeSectionDoc, homeSectionPath } from '../../lib/homeContent.js';
 import { createContactWhatsAppMessage, openWhatsApp } from '../../utils/whatsapp.js';
 
 export default function Hero() {
-  const [hero, setHero] = useState(defaultHomeSections.hero);
+  const [hero, setHero] = useState(null);
   const [settings, setSettings] = useState({ whatsappNumber: '94777193197', displayWhatsappNumber: '+94 77 719 3197' });
   const { getLocalized, t } = useLanguage();
 
-  useEffect(() => onSnapshot(doc(db, 'homeSections', 'hero'), (snap) => {
-    if (snap.exists()) setHero({ ...defaultHomeSections.hero, ...snap.data() });
+  useEffect(() => onSnapshot(homeSectionDoc('hero'), (snap) => {
+    setHero(snap.exists() ? snap.data() : defaultHomeSections.hero);
   }, (error) => {
-    console.error('Failed to load hero content from homeSections/hero', error);
+    console.error(`Failed to load hero content from ${homeSectionPath('hero')}`, error);
   }), []);
 
   useEffect(() => onSnapshot(doc(db, 'siteSettings', 'main'), (snap) => {
@@ -23,6 +23,14 @@ export default function Hero() {
   }, (error) => {
     console.error('Failed to load hero contact settings from siteSettings/main', error);
   }), []);
+
+  if (!hero) {
+    return (
+      <section id="home" className="relative min-h-[680px] bg-[var(--theme-hero)] text-[var(--theme-hero-text)]" aria-busy="true">
+        <div className="container-shell py-16">{t('common.loading')}</div>
+      </section>
+    );
+  }
 
   return (
     <section id="home" className="relative overflow-hidden bg-[var(--theme-hero)] text-[var(--theme-hero-text)]">
@@ -40,7 +48,7 @@ export default function Hero() {
           </div>
         </div>
         <div className="flex justify-center">
-          <img src={hero.imageUrl || '/ravana-bhawana-logo.png'} alt={getLocalized(hero, 'title', 'Ravana Bhavana')} className="w-full max-w-[500px] rounded-full border border-[color-mix(in_srgb,var(--theme-accent)_40%,transparent)] shadow-2xl transition duration-300 hover:scale-[1.025]" />
+          <img src={cacheBustedImageUrl(hero.imageUrl || '/ravana-bhawana-logo.png', hero.updatedAt)} alt={getLocalized(hero, 'title', 'Ravana Bhavana')} className="w-full max-w-[500px] rounded-full border border-[color-mix(in_srgb,var(--theme-accent)_40%,transparent)] shadow-2xl transition duration-300 hover:scale-[1.025]" />
         </div>
       </div>
       <div className="border-y border-[color-mix(in_srgb,var(--theme-accent)_26%,transparent)] bg-[color-mix(in_srgb,var(--theme-hero)_82%,var(--theme-primary))] py-4">
